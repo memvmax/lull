@@ -93,6 +93,10 @@ const pageLabels = computed(() => lang.value === 'zh' ? pageLabelsZh : pageLabel
 const pages: Page[] = ['notes', 'stats', 'read']
 
 onMounted(async () => {
+  console.log('App onMounted, store.myCode:', store.myCode, 'store.viewingCode:', store.viewingCode)
+  
+  await store.init()
+  
   if (store.questions.length === 0) {
     store.setQuestions([
       lang.value === 'zh' ? '今天我学到了什么？' : 'What did I learn today?',
@@ -100,8 +104,6 @@ onMounted(async () => {
       lang.value === 'zh' ? '今天我是否对他人友善？' : 'Was I kind to others today?'
     ])
   }
-  
-  store.init()
   
   const savedTheme = localStorage.getItem('moran-theme')
   if (savedTheme === 'dark') {
@@ -114,7 +116,7 @@ onMounted(async () => {
     lang.value = 'en'
   }
 
-  const code = localStorage.getItem('moran-my-code') || ''
+  const code = store.myCode
   const stocksKey = code ? `moran-stocks-${code}` : 'moran-stocks'
   const savedStocksData = localStorage.getItem(stocksKey)
   if (savedStocksData) {
@@ -141,7 +143,7 @@ onMounted(async () => {
 })
 
 function getStorageKey(base: string): string {
-  const code = localStorage.getItem('moran-my-code') || ''
+  const code = store.myCode
   return code ? `${base}-${code}` : base
 }
 
@@ -519,6 +521,8 @@ function handleTitleSubmit(title: string) {
 }
 
 function handleAuthorSubmit(author: string) {
+  if (store.isReadOnly) return
+  
   const entry = {
     id: crypto.randomUUID(),
     content: currentTitle.value,
@@ -528,24 +532,13 @@ function handleAuthorSubmit(author: string) {
     link: currentLink.value
   }
   
-  const code = localStorage.getItem('moran-my-code') || ''
-  const dataKey = code ? `moran-data-${code}` : 'moran-data'
-  const stored = localStorage.getItem(dataKey)
-  let data: any = { entries: [], questions: [], progress: [] }
-  if (stored) {
-    data = JSON.parse(stored)
-  }
-  data.entries.push(entry)
-  localStorage.setItem(dataKey, JSON.stringify(data))
-  
-  displayEntries.value.unshift({
+  store.entries.push({
     id: entry.id,
     content: entry.content,
     source: entry.source,
-    time: formatTime(new Date(entry.createdAt)),
-    type: 'link',
-    link: entry.link
+    createdAt: new Date(entry.createdAt)
   })
+  store.save()
   
   showLinkSetup.value = false
   currentLink.value = ''

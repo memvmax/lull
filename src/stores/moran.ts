@@ -285,6 +285,7 @@ export const useStore = defineStore('moran', () => {
     setQuestions,
     completeDay,
     undoCompleteDay,
-    setEtfs
+    setEtfs,
+    save
   }
 })
