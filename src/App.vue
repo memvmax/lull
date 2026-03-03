@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useStore } from '@/stores/moran'
-import { useAuthStore } from '@/stores/auth'
 import QuestionModal from '@/components/QuestionModal.vue'
 import CountdownPage from '@/components/CountdownPage.vue'
 import SettingsModal from '@/components/SettingsModal.vue'
@@ -11,7 +10,6 @@ import EtfSetupPanel from '@/components/EtfSetupPanel.vue'
 import EtfListPanel from '@/components/EtfListPanel.vue'
 import QuestionsSetupPanel from '@/components/QuestionsSetupPanel.vue'
 import LinkSetupPanel from '@/components/LinkSetupPanel.vue'
-import LoginPage from '@/components/LoginPage.vue'
 
 type Page = 'notes' | 'stats' | 'read'
 
@@ -43,7 +41,6 @@ interface DisplayEntry {
 }
 
 const store = useStore()
-const authStore = useAuthStore()
 const showQuestions = ref(false)
 const isDark = ref(false)
 const inputValue = ref('')
@@ -96,8 +93,6 @@ const pageLabels = computed(() => lang.value === 'zh' ? pageLabelsZh : pageLabel
 const pages: Page[] = ['notes', 'stats', 'read']
 
 onMounted(async () => {
-  await authStore.init()
-  
   if (store.questions.length === 0) {
     store.setQuestions([
       lang.value === 'zh' ? '今天我学到了什么？' : 'What did I learn today?',
@@ -622,47 +617,41 @@ function handleAuthorSubmit(author: string) {
 
 <template>
   <div class="app-container">
-    <LoginPage v-if="!authStore.loading && !authStore.isAuthenticated" />
+    <CountdownPage v-if="store.isTodayCompleted" @back="handleBackFromCountdown" />
     
-    <div v-else-if="authStore.loading" class="loading-screen">
-      <span>加载中...</span>
-    </div>
+    <QuestionModal
+      v-else-if="showQuestions"
+      :questions="store.questions"
+      @complete="handleQuestionsComplete"
+      @close="handleBackFromQuestions"
+    />
+      
+    <SettingsModal
+      v-if="showSettings"
+      :is-dark="isDark"
+      :lang="lang"
+      :current-code="currentCode"
+      :show-questions-setup="showQuestionsSetup"
+      @close="closeSettings"
+      @toggle-theme="toggleTheme"
+      @toggle-lang="toggleLang"
+      @switch-user="handleSwitchUser"
+      @setup-questions="showQuestionsSetup = true; closeSettings()"
+    />
     
-    <template v-else>
-      <CountdownPage v-if="store.isTodayCompleted" @back="handleBackFromCountdown" />
-      
-      <QuestionModal
-        v-else-if="showQuestions"
-        :questions="store.questions"
-        @complete="handleQuestionsComplete"
-        @close="handleBackFromQuestions"
-      />
-      
-      <SettingsModal
-        v-else-if="showSettings"
-        :is-dark="isDark"
-        :lang="lang"
-        @close="closeSettings"
-        @toggle-theme="toggleTheme"
-        @toggle-lang="toggleLang"
-        @switch-user="handleSwitchUser"
-        @setup-questions="showQuestionsSetup = true; closeSettings()"
-      />
-      
-      <template v-else>
-        <header class="top-bar">
-          <button class="page-btn" @click="cyclePage">
-            {{ pageLabels[currentPage] }}
-          </button>
-          <button class="settings-btn" @click="openSettings">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
-              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
-            </svg>
-          </button>
-        </header>
+    <header class="top-bar">
+      <button class="page-btn" @click="cyclePage">
+        {{ pageLabels[currentPage] }}
+      </button>
+      <button class="settings-btn" @click="openSettings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+      </button>
+    </header>
 
-        <main class="main-content">
+    <main class="main-content">
           <div v-if="helpVisible" class="help-panel">
             <button class="help-close" @click="helpVisible = false">×</button>
             <h3 class="help-title">{{ lang === 'zh' ? '指令说明' : 'COMMANDS' }}</h3>
@@ -876,8 +865,6 @@ function handleAuthorSubmit(author: string) {
             </button>
           </div>
         </div>
-      </template>
-    </template>
     
     <EditEntryModal
       v-if="editingEntry"
