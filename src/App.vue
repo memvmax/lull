@@ -38,6 +38,8 @@ interface DisplayEntry {
   content: string
   source: string
   time: string
+  type: 'note' | 'link'
+  link?: string
 }
 
 const store = useStore()
@@ -159,7 +161,9 @@ function loadEntries() {
         id: e.id,
         content: e.content,
         source: e.source,
-        time: formatTime(new Date(e.createdAt))
+        time: formatTime(new Date(e.createdAt)),
+        type: e.type || 'note',
+        link: e.link
       })).reverse()
     }
   }
@@ -176,7 +180,8 @@ function saveEntry(content: string, source: string) {
     id: crypto.randomUUID(),
     content,
     source,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    type: 'note'
   }
   
   const code = localStorage.getItem('moran-my-code') || ''
@@ -193,7 +198,8 @@ function saveEntry(content: string, source: string) {
     id: entry.id,
     content: entry.content,
     source: entry.source,
-    time: formatTime(new Date(entry.createdAt))
+    time: formatTime(new Date(entry.createdAt)),
+    type: 'note'
   })
 }
 
@@ -636,9 +642,11 @@ function handleTitleSubmit(title: string) {
 function handleAuthorSubmit(author: string) {
   const entry = {
     id: crypto.randomUUID(),
-    content: `[${currentTitle.value}](${currentLink.value})`,
+    content: currentTitle.value,
     source: author,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    type: 'link',
+    link: currentLink.value
   }
   
   const code = localStorage.getItem('moran-my-code') || ''
@@ -655,7 +663,9 @@ function handleAuthorSubmit(author: string) {
     id: entry.id,
     content: entry.content,
     source: entry.source,
-    time: formatTime(new Date(entry.createdAt))
+    time: formatTime(new Date(entry.createdAt)),
+    type: 'link',
+    link: entry.link
   })
   
   showLinkSetup.value = false
@@ -790,7 +800,7 @@ function handleAuthorSubmit(author: string) {
           />
 
           <div v-if="currentPage === 'notes'" class="entries-list">
-            <article v-for="entry in displayEntries" :key="entry.id" class="entry" :class="{ 'gm-mode': isGMMode }">
+            <article v-for="entry in displayEntries.filter(e => e.type !== 'link')" :key="entry.id" class="entry" :class="{ 'gm-mode': isGMMode }">
               <div class="meta">
                 <span>{{ entry.time }} · {{ entry.source }}</span>
                 <button v-if="isGMMode" class="edit-btn" @click="openEditModal(entry)" title="编辑">
@@ -803,7 +813,7 @@ function handleAuthorSubmit(author: string) {
               <div class="text">{{ entry.content }}</div>
             </article>
             
-            <div v-if="displayEntries.length > 0" class="complete-section">
+            <div v-if="displayEntries.filter(e => e.type !== 'link').length > 0" class="complete-section">
               <button class="complete-btn" @click="handleCompleteReading">
                 {{ lang === 'zh' ? '完成今日阅读' : 'Complete today' }}
               </button>
@@ -876,7 +886,22 @@ function handleAuthorSubmit(author: string) {
             </div>
           </div>
           
-          <div v-else-if="currentPage === 'read'" class="placeholder-page">
+          <div v-else-if="currentPage === 'read'" class="read-page">
+            <div v-if="displayEntries.filter(e => e.type === 'link').length === 0" class="empty-hint">
+              {{ lang === 'zh' ? '暂无文章，使用 /link 添加' : 'No articles yet. Use /link to add' }}
+            </div>
+            <article v-for="entry in displayEntries.filter(e => e.type === 'link')" :key="entry.id" class="link-entry" :class="{ 'gm-mode': isGMMode }">
+              <div class="meta">
+                <span>{{ entry.time }} · {{ entry.source }}</span>
+                <button v-if="isGMMode" class="edit-btn" @click="openEditModal(entry)" title="编辑">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+              </div>
+              <a :href="entry.link" target="_blank" rel="noopener noreferrer" class="link-title">{{ entry.content }}</a>
+            </article>
           </div>
         </main>
 
@@ -1136,6 +1161,42 @@ function handleAuthorSubmit(author: string) {
   font-weight: 400;
   line-height: 1.6;
   white-space: pre-wrap;
+}
+
+.read-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.empty-hint {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.link-entry {
+  margin-bottom: 32px;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.link-entry.gm-mode:hover .edit-btn {
+  opacity: 1;
+}
+
+.link-title {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-decoration: none;
+  display: inline-block;
+  transition: color 0.2s ease;
+  word-break: break-word;
+}
+
+.link-title:hover {
+  color: #2196f3;
 }
 
 @keyframes fadeIn {

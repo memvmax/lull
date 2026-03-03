@@ -26,7 +26,7 @@ const displayHtml = computed(() => {
     if (spaceIdx !== -1) {
       const cmdPart = val.slice(0, spaceIdx)
       const rest = val.slice(spaceIdx)
-      const isValidCmd = ['/ai', '/code', '/etf', '/help'].some(c => 
+      const isValidCmd = ['/ai', '/code', '/etf', '/help', '/link'].some(c => 
         cmdPart.toLowerCase() === c.toLowerCase() ||
         cmdPart.toLowerCase().startsWith(c.toLowerCase())
       )
@@ -36,7 +36,7 @@ const displayHtml = computed(() => {
       return `<span class="cmd-invalid">${escapeHtml(cmdPart)}</span>${escapeHtml(rest)}`
     }
     
-    const isValidCmd = ['/ai on', '/ai off', '/help', '/code', '/etf'].some(c => 
+    const isValidCmd = ['/ai on', '/ai off', '/help', '/code', '/etf', '/link'].some(c => 
       trimmed.toLowerCase() === c.toLowerCase() ||
       trimmed.toLowerCase().startsWith(c.toLowerCase())
     )
