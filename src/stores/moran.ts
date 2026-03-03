@@ -14,9 +14,11 @@ function generateCode(): string {
 
 function getMyCode(): string {
   let code = localStorage.getItem('moran-my-code')
+  console.log('getMyCode from localStorage:', code)
   if (!code) {
     code = generateCode()
     localStorage.setItem('moran-my-code', code)
+    console.log('Generated new code:', code)
   }
   return code
 }
@@ -24,6 +26,7 @@ function getMyCode(): string {
 function getViewingCode(): string {
   const viewingCode = localStorage.getItem('moran-viewing-code')
   const myCode = getMyCode()
+  console.log('getViewingCode:', { viewingCode, myCode })
   if (!viewingCode || viewingCode === myCode) {
     localStorage.removeItem('moran-viewing-code')
     return myCode
@@ -112,6 +115,7 @@ interface StorageData {
 export const useStore = defineStore('moran', () => {
   const myCode = ref(getMyCode())
   const viewingCode = ref(getViewingCode())
+  console.log('Store initialized, myCode:', myCode.value, 'viewingCode:', viewingCode.value)
   const entries = ref<Entry[]>([])
   const questions = ref<DailyQuestion[]>([])
   const progress = ref<DayProgress[]>([])
