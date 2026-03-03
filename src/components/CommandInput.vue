@@ -139,9 +139,9 @@ onMounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.4;
-  padding: 8px 0 8px 1ch;
+  padding: 8px 0 8px 1.5ch;
   pointer-events: none;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -164,9 +164,9 @@ textarea {
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--border-color);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.4;
-  padding: 8px 0 8px 1ch;
+  padding: 8px 0 8px 1.5ch;
   outline: none;
   color: transparent;
   caret-color: var(--text-primary);
