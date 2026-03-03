@@ -613,6 +613,12 @@ function handleEditEtf(name: string) {
   showEtfSetup.value = true
 }
 
+function handleEditEtfStock(etfName: string, symbol: string) {
+  editingEtfName.value = etfName
+  showEtfList.value = false
+  showEtfSetup.value = true
+}
+
 function handleDeleteEtfStock(etfName: string, symbol: string) {
   const etf = savedEtfs.value.find(e => e.name === etfName)
   if (etf) {
@@ -863,24 +869,32 @@ function handleAuthorSubmit(author: string) {
                   <span class="etf-name">{{ etf.name }}</span>
                   <div class="etf-item-right">
                     <span class="etf-count">{{ etf.stocks.length }} {{ lang === 'zh' ? '只' : 'stocks' }}</span>
+                    <button class="etf-action-btn" @click.stop="handleEditEtf(etf.name)" title="编辑">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    </button>
+                    <button class="etf-action-btn delete" @click.stop="handleDeleteEtf(etf.name)" title="删除">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                      </svg>
+                    </button>
                     <span class="expand-icon">{{ expandedEtf === etf.name ? '▼' : '▶' }}</span>
                   </div>
                 </div>
                 <div v-if="expandedEtf === etf.name" class="etf-stocks-list">
                   <div v-for="stock in etf.stocks" :key="stock.symbol" class="etf-stock-row">
-                    <span class="stock-symbol">{{ stock.symbol }}</span>
-                    <span class="stock-price" v-if="etfStockPrices[stock.symbol]">
-                      {{ etfStockPrices[stock.symbol]?.price?.toFixed(2) }}
-                    </span>
-                    <span class="stock-change" v-if="etfStockPrices[stock.symbol]" :class="{ positive: (etfStockPrices[stock.symbol]?.change ?? 0) >= 0, negative: (etfStockPrices[stock.symbol]?.change ?? 0) < 0 }">
-                      {{ formatChange(etfStockPrices[stock.symbol]?.change ?? 0) }}
-                    </span>
-                    <span class="stock-weight">{{ stock.weight.toFixed(1) }}%</span>
+                    <div class="stock-cell stock-symbol">{{ stock.symbol }}</div>
+                    <div class="stock-cell stock-weight">{{ stock.weight.toFixed(1) }}%</div>
+                    <button class="stock-edit-btn" @click.stop="handleEditEtfStock(etf.name, stock.symbol)">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    </button>
                     <button class="remove-stock-btn" @click.stop="handleDeleteEtfStock(etf.name, stock.symbol)">×</button>
                   </div>
-                  <button class="add-stock-btn" @click.stop="handleEditEtf(etf.name)">
-                    {{ lang === 'zh' ? '添加股票' : 'Add Stock' }}
-                  </button>
                 </div>
               </div>
             </div>
@@ -906,20 +920,22 @@ function handleAuthorSubmit(author: string) {
         </main>
 
         <div class="input-container" :class="{ 'ai-mode': aiMode }">
-          <CommandInput
-            v-model="inputValue"
-            :placeholder="isLoading ? (lang === 'zh' ? '处理中...' : 'Processing...') : (lang === 'zh' ? '输入内容，或 /help 获取指令协助' : 'Enter content, or /help for commands')"
-            :disabled="isLoading"
-            :ai-mode="aiMode"
-            @submit="handleSubmit"
-          />
-          <button 
-            class="send-btn" 
-            @click="handleSubmit"
-            :disabled="isLoading || !inputValue.trim()"
-          >
-            {{ lang === 'zh' ? '发送' : 'Send' }}
-          </button>
+          <div class="input-wrapper">
+            <CommandInput
+              v-model="inputValue"
+              :placeholder="isLoading ? (lang === 'zh' ? '处理中...' : 'Processing...') : (lang === 'zh' ? '输入内容，或 /help 获取指令协助' : 'Enter content, or /help for commands')"
+              :disabled="isLoading"
+              :ai-mode="aiMode"
+              @submit="handleSubmit"
+            />
+            <button 
+              class="send-btn" 
+              @click="handleSubmit"
+              :disabled="isLoading || !inputValue.trim()"
+            >
+              {{ lang === 'zh' ? '发送' : 'Send' }}
+            </button>
+          </div>
         </div>
       </template>
     </template>
@@ -1357,6 +1373,7 @@ function handleAuthorSubmit(author: string) {
 
 .etf-item-wrapper {
   border-bottom: 1px solid var(--border-color);
+  line-height: 1;
 }
 
 .etf-item {
@@ -1390,6 +1407,26 @@ function handleAuthorSubmit(author: string) {
   color: var(--text-secondary);
 }
 
+.etf-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  transition: color 0.2s ease;
+}
+
+.etf-action-btn:hover {
+  color: var(--text-secondary);
+}
+
+.etf-action-btn.delete:hover {
+  color: #e53935;
+}
+
 .expand-icon {
   font-size: 10px;
   color: var(--text-tertiary);
@@ -1400,49 +1437,53 @@ function handleAuthorSubmit(author: string) {
   background: rgba(0, 0, 0, 0.02);
   border-radius: 8px;
   margin-bottom: 8px;
+  line-height: 1;
 }
 
 .etf-stock-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 60px 24px 24px;
   align-items: center;
   padding: 8px 12px;
+  font-size: 13px;
 }
 
-.etf-stock-row .stock-symbol {
+.stock-cell {
+  text-align: right;
   font-family: var(--font-mono);
   font-size: 13px;
-  color: var(--text-primary);
-  flex: 1;
 }
 
-.etf-stock-row .stock-price {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  color: var(--text-primary);
-  margin-right: 12px;
+.stock-cell.stock-symbol {
+  text-align: left;
 }
 
-.etf-stock-row .stock-change {
-  font-size: 12px;
-  margin-right: 12px;
-}
-
-.etf-stock-row .stock-change.positive {
-  color: #4caf50;
-}
-
-.etf-stock-row .stock-change.negative {
-  color: #e53935;
-}
-
-.etf-stock-row .stock-weight {
-  font-size: 12px;
+.stock-cell.stock-weight {
   color: var(--text-secondary);
-  margin-right: 12px;
+  font-size: 13px;
 }
 
 .remove-stock-btn {
-  font-size: 16px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-stock-btn:hover {
+  color: #e53935;
+}
+
+.stock-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-tertiary);
   background: transparent;
   border: none;
@@ -1451,8 +1492,8 @@ function handleAuthorSubmit(author: string) {
   transition: color 0.2s ease;
 }
 
-.remove-stock-btn:hover {
-  color: #e53935;
+.stock-edit-btn:hover {
+  color: var(--text-secondary);
 }
 
 .add-stock-btn {
@@ -1480,9 +1521,15 @@ function handleAuthorSubmit(author: string) {
 .input-container {
   position: fixed;
   bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90%;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+}
+
+.input-wrapper {
+  width: 100%;
   max-width: 560px;
   display: flex;
   align-items: center;
