@@ -1,4 +1,6 @@
-export default async function handler(req: any, res: any) {
+import type { VercelRequest, VercelResponse } from '@vercel/node'
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' })
     return
@@ -13,7 +15,7 @@ export default async function handler(req: any, res: any) {
       return
     }
 
-    const prompts = {
+    const prompts: Record<string, string> = {
       refine: `请提炼以下内容的关键点，保持简洁，用中文回复，不要添加任何开场白或结束语，直接输出提炼后的内容：\n\n${content}`,
       search: `请针对以下内容，提供相关的背景信息、作者介绍或延伸阅读建议。用中文回复，保持简洁，不要添加开场白：\n\n${content}`
     }
@@ -31,12 +33,12 @@ export default async function handler(req: any, res: any) {
         max_tokens: 1024,
         messages: [{
           role: 'user',
-          content: prompts[action as keyof typeof prompts] || prompts.refine
+          content: prompts[action] || prompts.refine
         }]
       })
     })
 
-    const data = await response.json()
+    const data = await response.json() as { error?: { message: string }; content?: { text: string }[] }
     
     if (data.error) {
       res.status(400).json({ error: data.error.message })
@@ -45,7 +47,7 @@ export default async function handler(req: any, res: any) {
 
     const result = data.content?.[0]?.text || ''
     res.status(200).json({ result })
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: '请求失败' })
   }
 }

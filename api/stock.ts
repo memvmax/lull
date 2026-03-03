@@ -1,4 +1,6 @@
-export default async function handler(req: any, res: any) {
+import type { VercelRequest, VercelResponse } from '@vercel/node'
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'Method not allowed' })
     return
@@ -6,7 +8,7 @@ export default async function handler(req: any, res: any) {
 
   const { symbol } = req.query
 
-  if (!symbol) {
+  if (!symbol || typeof symbol !== 'string') {
     res.status(400).json({ error: '请提供股票代码' })
     return
   }
@@ -26,7 +28,22 @@ export default async function handler(req: any, res: any) {
       }
     )
 
-    const data = await response.json()
+    const data = await response.json() as {
+      chart?: {
+        result?: Array<{
+          meta?: {
+            regularMarketPrice?: number
+            shortName?: string
+            currency?: string
+          }
+          indicators?: {
+            quote?: Array<{
+              close?: (number | null)[]
+            }>
+          }
+        }>
+      }
+    }
     
     const result = data.chart?.result?.[0]
     if (!result) {
@@ -39,7 +56,7 @@ export default async function handler(req: any, res: any) {
     
     const currentPrice = meta.regularMarketPrice || closes[closes.length - 1]
     
-    let yearStartPrice = null
+    let yearStartPrice: number | null = null
     for (let i = 0; i < closes.length; i++) {
       if (closes[i] !== null) {
         yearStartPrice = closes[i]
@@ -53,13 +70,13 @@ export default async function handler(req: any, res: any) {
     }
 
     res.status(200).json({
-      symbol: (symbol as string).toUpperCase(),
+      symbol: symbol.toUpperCase(),
       name: meta.shortName || symbol,
       price: currentPrice,
       currency: meta.currency || 'USD',
       yearChange: yearChange
     })
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: '获取股票数据失败' })
   }
 }
