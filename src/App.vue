@@ -91,19 +91,29 @@ onMounted(async () => {
     lang.value = 'en'
   }
 
-  const savedStocksData = localStorage.getItem('moran-stocks')
+  const code = localStorage.getItem('moran-my-code') || ''
+  const stocksKey = code ? `moran-stocks-${code}` : 'moran-stocks'
+  const savedStocksData = localStorage.getItem(stocksKey)
   if (savedStocksData) {
     savedStocks.value = JSON.parse(savedStocksData)
   }
 
-  const savedEtfsData = localStorage.getItem('moran-etfs')
+  const etfsKey = code ? `moran-etfs-${code}` : 'moran-etfs'
+  const savedEtfsData = localStorage.getItem(etfsKey)
   if (savedEtfsData) {
     savedEtfs.value = JSON.parse(savedEtfsData)
   }
 })
 
+function getStorageKey(base: string): string {
+  const code = localStorage.getItem('moran-my-code') || ''
+  return code ? `${base}-${code}` : base
+}
+
 function loadEntries() {
-  const stored = localStorage.getItem('moran-data')
+  const code = localStorage.getItem('moran-my-code') || ''
+  const dataKey = code ? `moran-data-${code}` : 'moran-data'
+  const stored = localStorage.getItem(dataKey)
   if (stored) {
     const data = JSON.parse(stored)
     if (data.entries && Array.isArray(data.entries)) {
@@ -131,13 +141,15 @@ function saveEntry(content: string, source: string) {
     createdAt: new Date().toISOString()
   }
   
-  const stored = localStorage.getItem('moran-data')
+  const code = localStorage.getItem('moran-my-code') || ''
+  const dataKey = code ? `moran-data-${code}` : 'moran-data'
+  const stored = localStorage.getItem(dataKey)
   let data: any = { entries: [], questions: [], progress: [] }
   if (stored) {
     data = JSON.parse(stored)
   }
   data.entries.push(entry)
-  localStorage.setItem('moran-data', JSON.stringify(data))
+  localStorage.setItem(dataKey, JSON.stringify(data))
   
   displayEntries.value.unshift({
     id: entry.id,
@@ -245,7 +257,7 @@ async function handleSubmit() {
       } else {
         savedEtfs.value.push({ name: currentEtfName.value, symbols: [parsed.symbol] })
       }
-      localStorage.setItem('moran-etfs', JSON.stringify(savedEtfs.value))
+      localStorage.setItem(getStorageKey('moran-etfs'), JSON.stringify(savedEtfs.value))
       inputValue.value = ''
       return
     }
@@ -261,7 +273,7 @@ async function handleSubmit() {
       } else {
         savedStocks.value.unshift(data)
       }
-      localStorage.setItem('moran-stocks', JSON.stringify(savedStocks.value))
+      localStorage.setItem(getStorageKey('moran-stocks'), JSON.stringify(savedStocks.value))
     }
     isLoading.value = false
     inputValue.value = ''
@@ -403,12 +415,86 @@ function formatChange(change: number): string {
 
 function removeStock(symbol: string) {
   savedStocks.value = savedStocks.value.filter(s => s.symbol !== symbol)
-  localStorage.setItem('moran-stocks', JSON.stringify(savedStocks.value))
+  localStorage.setItem(getStorageKey('moran-stocks'), JSON.stringify(savedStocks.value))
 }
 
 function removeEtf(name: string) {
   savedEtfs.value = savedEtfs.value.filter(e => e.name !== name)
-  localStorage.setItem('moran-etfs', JSON.stringify(savedEtfs.value))
+  localStorage.setItem(getStorageKey('moran-etfs'), JSON.stringify(savedEtfs.value))
+}
+
+const currentCode = ref('')
+
+function handleSwitchUser(code: string) {
+  const upperCode = code.toUpperCase()
+  
+  if (upperCode === 'MM1024') {
+    localStorage.setItem('moran-my-code', 'MM1024')
+    currentCode.value = 'MM1024'
+    loadFromCode('MM1024')
+    closeSettings()
+    return
+  }
+  
+  const stored = localStorage.getItem(`moran-data-${upperCode}`)
+  if (stored) {
+    localStorage.setItem('moran-my-code', upperCode)
+    currentCode.value = upperCode
+    loadFromCode(upperCode)
+    closeSettings()
+  } else {
+    alert(lang.value === 'zh' ? '代码无效或用户不存在' : 'Invalid code or user not found')
+  }
+}
+
+function loadFromCode(code: string) {
+  const dataKey = `moran-data-${code}`
+  const stored = localStorage.getItem(dataKey)
+  if (stored) {
+    const data = JSON.parse(stored)
+    if (data.entries && Array.isArray(data.entries)) {
+      displayEntries.value = data.entries.map((e: any) => ({
+        id: e.id,
+        content: e.content,
+        source: e.source,
+        time: formatTime(new Date(e.createdAt))
+      })).reverse()
+    }
+  } else {
+    displayEntries.value = []
+  }
+  
+  const stocksKey = `moran-stocks-${code}`
+  const stocksData = localStorage.getItem(stocksKey)
+  savedStocks.value = stocksData ? JSON.parse(stocksData) : []
+  
+  const etfsKey = `moran-etfs-${code}`
+  const etfsData = localStorage.getItem(etfsKey)
+  savedEtfs.value = etfsData ? JSON.parse(etfsData) : []
+}
+
+function saveToCurrentCode() {
+  const code = currentCode.value || localStorage.getItem('moran-my-code') || ''
+  if (!code) return
+  
+  const dataKey = `moran-data-${code}`
+  const stored = localStorage.getItem(dataKey)
+  let data: any = { entries: [], questions: [], progress: [] }
+  if (stored) {
+    data = JSON.parse(stored)
+  }
+  
+  const entries = displayEntries.value.map(e => ({
+    id: e.id,
+    content: e.content,
+    source: e.source,
+    createdAt: new Date().toISOString()
+  })).reverse()
+  
+  data.entries = entries
+  localStorage.setItem(dataKey, JSON.stringify(data))
+  localStorage.setItem('moran-stocks-' + code, JSON.stringify(savedStocks.value))
+  localStorage.setItem('moran-etfs-' + code, JSON.stringify(savedEtfs.value))
 }
 </script>
 
@@ -437,6 +523,7 @@ function removeEtf(name: string) {
         @close="closeSettings"
         @toggle-theme="toggleTheme"
         @toggle-lang="toggleLang"
+        @switch-user="handleSwitchUser"
       />
       
       <template v-else>
