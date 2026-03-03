@@ -89,7 +89,7 @@ export const useStore = defineStore('moran', () => {
   }
 
   function completeDay(answers: Record<string, boolean>) {
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = new Date().toISOString().split('T')[0] || ''
     const existingIndex = progress.value.findIndex(p => p.date === todayStr)
     const dayProgress: DayProgress = {
       date: todayStr,
@@ -105,7 +105,7 @@ export const useStore = defineStore('moran', () => {
   }
 
   function undoCompleteDay() {
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = new Date().toISOString().split('T')[0] || ''
     const index = progress.value.findIndex(p => p.date === todayStr)
     if (index > -1) {
       progress.value.splice(index, 1)

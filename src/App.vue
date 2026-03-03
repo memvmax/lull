@@ -136,7 +136,8 @@ function saveEntry(content: string, source: string) {
 
 function cyclePage() {
   const currentIndex = pages.indexOf(currentPage.value)
-  currentPage.value = pages[(currentIndex + 1) % pages.length]
+  const nextIndex = (currentIndex + 1) % pages.length
+  currentPage.value = pages[nextIndex]!
   stockResult.value = null
   etfResults.value = []
 }
@@ -159,12 +160,12 @@ function parseInput(raw: string) {
   }
   
   const codeMatch = trimmed.match(/^\/code\s+(\S+)/i)
-  if (codeMatch) {
+  if (codeMatch && codeMatch[1]) {
     return { type: 'code', symbol: codeMatch[1] }
   }
   
   const etfSetupMatch = trimmed.match(/^\/etf\s+(\S+)\s+setup/i)
-  if (etfSetupMatch) {
+  if (etfSetupMatch && etfSetupMatch[1]) {
     etfSetupMode.value = true
     currentEtfName.value = etfSetupMatch[1].toLowerCase()
     return { type: 'etf-setup', name: currentEtfName.value }
@@ -177,7 +178,7 @@ function parseInput(raw: string) {
   }
   
   const etfQueryMatch = trimmed.match(/^\/etf\s+(\S+)/i)
-  if (etfQueryMatch) {
+  if (etfQueryMatch && etfQueryMatch[1]) {
     return { type: 'etf-query', name: etfQueryMatch[1].toLowerCase() }
   }
   
@@ -221,7 +222,7 @@ async function handleSubmit() {
     return
   }
   
-  if (parsed.type === 'code') {
+  if (parsed.type === 'code' && parsed.symbol) {
     if (etfSetupMode.value) {
       const existing = savedEtfs.value.find(e => e.name === currentEtfName.value)
       if (existing) {
@@ -264,7 +265,7 @@ async function handleSubmit() {
     return
   }
   
-  if (parsed.type === 'etf-query') {
+  if (parsed.type === 'etf-query' && parsed.name) {
     isLoading.value = true
     stockResult.value = null
     etfResults.value = []
@@ -285,7 +286,7 @@ async function handleSubmit() {
     return
   }
   
-  if (parsed.type === 'content') {
+  if (parsed.type === 'content' && parsed.raw) {
     const raw = parsed.raw
     const atIdx = raw.indexOf('@')
     let content = raw

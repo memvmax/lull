@@ -2,7 +2,7 @@
 import type { Entry } from '@/types'
 import { formatDate } from '@/utils/format'
 
-defineProps<{
+const props = defineProps<{
   entry: Entry
 }>()
 
@@ -11,7 +11,7 @@ const emit = defineEmits<{
 }>()
 
 function handleDelete() {
-  emit('delete', entry.id)
+  emit('delete', props.entry.id)
 }
 </script>
 

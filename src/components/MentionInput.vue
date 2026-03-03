@@ -106,12 +106,14 @@ function handleKeydown(e: KeyboardEvent) {
       selectedIndex.value = (selectedIndex.value - 1 + filteredSources.value.length) % filteredSources.value.length
     } else if (e.key === 'Tab') {
       e.preventDefault()
-      selectSource(filteredSources.value[selectedIndex.value])
+      const selected = filteredSources.value[selectedIndex.value]
+      if (selected) selectSource(selected)
     } else if (e.key === 'Escape') {
       showDropdown.value = false
     } else if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      selectSource(filteredSources.value[selectedIndex.value])
+      const selected = filteredSources.value[selectedIndex.value]
+      if (selected) selectSource(selected)
     }
   } else if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
