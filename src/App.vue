@@ -72,8 +72,8 @@ const displayEntries = computed(() => store.sortedEntries as DisplayEntry[])
 const editingEntry = ref<DisplayEntry | null>(null)
 
 const isGMMode = computed(() => {
-  const code = localStorage.getItem('moran-my-code') || ''
-  return code === 'MM1024'
+  if (store.isReadOnly) return false
+  return store.myCode === 'MM1024'
 })
 
 const pageLabelsZh: Record<Page, string> = {
@@ -421,59 +421,14 @@ function removeEtf(name: string) {
   store.setEtfs(savedEtfs.value.filter(e => e.name !== name))
 }
 
-const currentCode = ref('')
-
-async function handleSwitchUser(code: string) {
-  const upperCode = code.toUpperCase()
-  
-  if (upperCode === 'MM1024') {
-    localStorage.setItem('moran-my-code', 'MM1024')
-    currentCode.value = 'MM1024'
-    await store.init()
-    loadEtfsFromCode('MM1024')
-    closeSettings()
-    return
-  }
-  
-  localStorage.setItem('moran-my-code', upperCode)
-  currentCode.value = upperCode
-  
-  await store.init()
-  loadEtfsFromCode(upperCode)
+async function handleVisitCommunity(code: string) {
+  await store.switchToCode(code.toUpperCase())
   closeSettings()
 }
 
-async function loadEtfsFromCode(code: string) {
-  const etfsKey = `moran-etfs-${code}`
-  const etfsData = localStorage.getItem(etfsKey)
-  if (etfsData) {
-    store.setEtfs(JSON.parse(etfsData))
-  } else {
-    store.setEtfs([])
-  }
-}
-
-function saveToCurrentCode() {
-  const code = currentCode.value || localStorage.getItem('moran-my-code') || ''
-  if (!code) return
-  
-  const dataKey = `moran-data-${code}`
-  const stored = localStorage.getItem(dataKey)
-  let data: any = { entries: [], questions: [], progress: [] }
-  if (stored) {
-    data = JSON.parse(stored)
-  }
-  
-  const entries = displayEntries.value.map(e => ({
-    id: e.id,
-    content: e.content,
-    source: e.source,
-    createdAt: new Date().toISOString()
-  })).reverse()
-  
-  data.entries = entries
-  localStorage.setItem(dataKey, JSON.stringify(data))
-  localStorage.setItem('moran-stocks-' + code, JSON.stringify(savedStocks.value))
+function handleBackToMyCommunity() {
+  store.backToMyCode()
+  closeSettings()
 }
 
 function openEditModal(entry: DisplayEntry) {
@@ -490,32 +445,12 @@ function handleDeleteEntry(id: string) {
 }
 
 function handleSaveEntry(id: string, data: { source: string; time: string }) {
-  const entry = displayEntries.value.find(e => e.id === id)
+  if (store.isReadOnly) return
+  const entry = store.entries.find(e => e.id === id)
   if (entry) {
     entry.source = data.source
-    entry.time = data.time
-    saveEntriesToStorage()
   }
   closeEditModal()
-}
-
-function saveEntriesToStorage() {
-  const code = localStorage.getItem('moran-my-code') || ''
-  const dataKey = code ? `moran-data-${code}` : 'moran-data'
-  const stored = localStorage.getItem(dataKey)
-  let data: any = { entries: [], questions: [], progress: [] }
-  if (stored) {
-    data = JSON.parse(stored)
-  }
-  
-  data.entries = displayEntries.value.map(e => ({
-    id: e.id,
-    content: e.content,
-    source: e.source,
-    createdAt: new Date().toISOString()
-  })).reverse()
-  
-  localStorage.setItem(dataKey, JSON.stringify(data))
 }
 
 function handleSaveEtf(data: { name: string; symbol: string; weight: number }) {
@@ -630,12 +565,14 @@ function handleAuthorSubmit(author: string) {
       v-if="showSettings"
       :is-dark="isDark"
       :lang="lang"
-      :current-code="currentCode"
-      :show-questions-setup="showQuestionsSetup"
+      :my-code="store.myCode"
+      :viewing-code="store.viewingCode"
+      :is-read-only="store.isReadOnly"
       @close="closeSettings"
       @toggle-theme="toggleTheme"
       @toggle-lang="toggleLang"
-      @switch-user="handleSwitchUser"
+      @visit-community="handleVisitCommunity"
+      @back-to-my-community="handleBackToMyCommunity"
       @setup-questions="showQuestionsSetup = true; closeSettings()"
     />
     
@@ -847,7 +784,7 @@ function handleAuthorSubmit(author: string) {
           </div>
         </main>
 
-        <div class="input-container" :class="{ 'ai-mode': aiMode }">
+        <div v-if="!store.isReadOnly" class="input-container" :class="{ 'ai-mode': aiMode }">
           <div class="input-wrapper">
             <CommandInput
               v-model="inputValue"
@@ -864,6 +801,10 @@ function handleAuthorSubmit(author: string) {
               {{ lang === 'zh' ? '发送' : 'Send' }}
             </button>
           </div>
+        </div>
+        
+        <div v-else class="readonly-notice">
+          {{ lang === 'zh' ? '只读模式 - 点击设置返回你的社区' : 'Read-only mode - Click settings to return to your community' }}
         </div>
     
     <EditEntryModal
@@ -1461,6 +1402,17 @@ function handleAuthorSubmit(author: string) {
   align-items: center;
   justify-content: center;
   gap: 12px;
+}
+
+.readonly-notice {
+  position: fixed;
+  bottom: 40px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  padding: 12px;
 }
 
 .send-btn {

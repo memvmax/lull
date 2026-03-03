@@ -1,55 +1,41 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 
 const props = defineProps<{
   isDark?: boolean
   lang: 'zh' | 'en'
-  currentCode?: string
-  showQuestionsSetup?: boolean
+  myCode: string
+  viewingCode: string
+  isReadOnly: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'toggleTheme'): void
   (e: 'toggleLang'): void
-  (e: 'switchUser', code: string): void
+  (e: 'visitCommunity', code: string): void
+  (e: 'backToMyCommunity'): void
   (e: 'setupQuestions'): void
 }>()
 
-const myCheatCode = ref('')
-const inputCheatCode = ref('')
-const showInput = ref(false)
+const visitCode = ref('')
+const showVisitInput = ref(false)
 
-function generateCheatCode(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-  let code = ''
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return code
+function copyMyCode() {
+  navigator.clipboard.writeText(props.myCode)
 }
 
-onMounted(() => {
-  const stored = localStorage.getItem('moran-my-code')
-  if (stored) {
-    myCheatCode.value = stored
-  } else {
-    myCheatCode.value = generateCheatCode()
-    localStorage.setItem('moran-my-code', myCheatCode.value)
-  }
-})
-
-function handleSwitchUser() {
-  const code = inputCheatCode.value.toUpperCase().trim()
+function handleVisit() {
+  const code = visitCode.value.toUpperCase().trim()
   if (code.length === 6) {
-    emit('switchUser', code)
-    inputCheatCode.value = ''
-    showInput.value = false
+    emit('visitCommunity', code)
+    visitCode.value = ''
+    showVisitInput.value = false
   }
 }
 
-function copyCode() {
-  navigator.clipboard.writeText(myCheatCode.value)
+function handleBack() {
+  emit('backToMyCommunity')
 }
 </script>
 
@@ -86,8 +72,8 @@ function copyCode() {
         <div class="settings-item cheat-code-section">
           <span class="item-label">{{ lang === 'zh' ? '我的代码' : 'My Code' }}</span>
           <div class="cheat-code-display">
-            <code class="cheat-code">{{ myCheatCode }}</code>
-            <button class="copy-btn" @click="copyCode" :title="lang === 'zh' ? '复制' : 'Copy'">
+            <code class="cheat-code">{{ myCode }}</code>
+            <button class="copy-btn" @click="copyMyCode" :title="lang === 'zh' ? '复制' : 'Copy'">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                 <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
@@ -96,24 +82,39 @@ function copyCode() {
           </div>
         </div>
         
-        <div class="settings-item">
-          <span class="item-label">{{ lang === 'zh' ? '切换用户' : 'Switch User' }}</span>
-          <button class="switch-btn" @click="showInput = !showInput">
-            {{ showInput ? (lang === 'zh' ? '取消' : 'Cancel') : (lang === 'zh' ? '输入代码' : 'Enter Code') }}
+        <div v-if="isReadOnly" class="settings-item viewing-section">
+          <span class="item-label">{{ lang === 'zh' ? '当前查看' : 'Viewing' }}</span>
+          <div class="viewing-display">
+            <code class="cheat-code viewing-code">{{ viewingCode }}</code>
+            <span class="readonly-badge">{{ lang === 'zh' ? '只读' : 'Read-only' }}</span>
+          </div>
+        </div>
+        
+        <div v-if="isReadOnly" class="settings-item">
+          <span class="item-label"></span>
+          <button class="back-to-my-btn" @click="handleBack">
+            {{ lang === 'zh' ? '返回我的社区' : 'Back to My Community' }}
           </button>
         </div>
         
-        <div v-if="showInput" class="code-input-section">
+        <div v-if="!isReadOnly" class="settings-item">
+          <span class="item-label">{{ lang === 'zh' ? '访问社区' : 'Visit Community' }}</span>
+          <button class="switch-btn" @click="showVisitInput = !showVisitInput">
+            {{ showVisitInput ? (lang === 'zh' ? '取消' : 'Cancel') : (lang === 'zh' ? '输入代码' : 'Enter Code') }}
+          </button>
+        </div>
+        
+        <div v-if="showVisitInput && !isReadOnly" class="code-input-section">
           <input
-            v-model="inputCheatCode"
+            v-model="visitCode"
             type="text"
             maxlength="6"
             :placeholder="lang === 'zh' ? '输入6位代码' : 'Enter 6-digit code'"
             class="code-input"
-            @keyup.enter="handleSwitchUser"
+            @keyup.enter="handleVisit"
           />
-          <button class="confirm-btn" @click="handleSwitchUser" :disabled="inputCheatCode.length !== 6">
-            {{ lang === 'zh' ? '确认' : 'Confirm' }}
+          <button class="confirm-btn" @click="handleVisit" :disabled="visitCode.length !== 6">
+            {{ lang === 'zh' ? '访问' : 'Visit' }}
           </button>
         </div>
       </div>
@@ -211,11 +212,13 @@ function copyCode() {
   color: var(--text-tertiary);
 }
 
-.cheat-code-section {
+.cheat-code-section,
+.viewing-section {
   cursor: default;
 }
 
-.cheat-code-display {
+.cheat-code-display,
+.viewing-display {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -234,6 +237,21 @@ function copyCode() {
 
 .dark .cheat-code {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.viewing-code {
+  background: rgba(33, 150, 243, 0.15);
+}
+
+.readonly-badge {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #2196f3;
+  background: rgba(33, 150, 243, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 .copy-btn {
@@ -266,6 +284,24 @@ function copyCode() {
 .switch-btn:hover {
   color: var(--text-primary);
   border-color: var(--text-secondary);
+}
+
+.back-to-my-btn {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+  background: #2196f3;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 8px 16px;
+  transition: all 0.2s ease;
+}
+
+.back-to-my-btn:hover {
+  background: #1976d2;
 }
 
 .code-input-section {

@@ -3,12 +3,30 @@ import { defineStore } from 'pinia'
 import type { Entry, DailyQuestion, DayProgress } from '@/types'
 import { supabase } from '@/lib/supabase'
 
-const DATA_TYPES = {
-  USER_DATA: 'user_data'
+function generateCode(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let code = ''
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return code
 }
 
-function getCode(): string {
-  return localStorage.getItem('moran-my-code') || ''
+function getMyCode(): string {
+  let code = localStorage.getItem('moran-my-code')
+  if (!code) {
+    code = generateCode()
+    localStorage.setItem('moran-my-code', code)
+  }
+  return code
+}
+
+function getViewingCode(): string {
+  return localStorage.getItem('moran-viewing-code') || getMyCode()
+}
+
+function setViewingCode(code: string) {
+  localStorage.setItem('moran-viewing-code', code)
 }
 
 function formatTime(date: Date): string {
@@ -78,11 +96,15 @@ interface StorageData {
 }
 
 export const useStore = defineStore('moran', () => {
+  const myCode = ref(getMyCode())
+  const viewingCode = ref(getViewingCode())
   const entries = ref<Entry[]>([])
   const questions = ref<DailyQuestion[]>([])
   const progress = ref<DayProgress[]>([])
   const etfs = ref<any[]>([])
   const isLoading = ref(true)
+
+  const isReadOnly = computed(() => viewingCode.value !== myCode.value)
 
   const sortedEntries = computed(() => {
     return [...entries.value]
@@ -109,7 +131,7 @@ export const useStore = defineStore('moran', () => {
 
   async function init() {
     isLoading.value = true
-    const code = getCode()
+    const code = viewingCode.value
     if (code) {
       const data = await loadFromSupabase(code)
       entries.value = data.entries
@@ -120,7 +142,20 @@ export const useStore = defineStore('moran', () => {
     isLoading.value = false
   }
 
+  async function switchToCode(code: string) {
+    viewingCode.value = code
+    setViewingCode(code)
+    await init()
+  }
+
+  function backToMyCode() {
+    viewingCode.value = myCode.value
+    setViewingCode(myCode.value)
+    init()
+  }
+
   function addEntry(content: string, source: string) {
+    if (isReadOnly.value) return
     const entry: Entry = {
       id: crypto.randomUUID(),
       content,
@@ -132,6 +167,7 @@ export const useStore = defineStore('moran', () => {
   }
 
   function deleteEntry(id: string) {
+    if (isReadOnly.value) return
     const index = entries.value.findIndex(e => e.id === id)
     if (index > -1) {
       entries.value.splice(index, 1)
@@ -140,6 +176,7 @@ export const useStore = defineStore('moran', () => {
   }
 
   function setQuestions(newQuestions: string[]) {
+    if (isReadOnly.value) return
     questions.value = newQuestions.map((q, i) => ({
       id: `q-${i}`,
       question: q
@@ -148,6 +185,7 @@ export const useStore = defineStore('moran', () => {
   }
 
   function completeDay(answers: Record<string, boolean>) {
+    if (isReadOnly.value) return
     const todayStr = new Date().toISOString().split('T')[0] || ''
     const existingIndex = progress.value.findIndex(p => p.date === todayStr)
     const dayProgress: DayProgress = {
@@ -164,6 +202,7 @@ export const useStore = defineStore('moran', () => {
   }
 
   function undoCompleteDay() {
+    if (isReadOnly.value) return
     const todayStr = new Date().toISOString().split('T')[0] || ''
     const index = progress.value.findIndex(p => p.date === todayStr)
     if (index > -1) {
@@ -173,12 +212,14 @@ export const useStore = defineStore('moran', () => {
   }
 
   function setEtfs(newEtfs: any[]) {
+    if (isReadOnly.value) return
     etfs.value = newEtfs
     save()
   }
 
   async function save() {
-    const code = getCode()
+    if (isReadOnly.value) return
+    const code = myCode.value
     if (!code) return
     
     await Promise.all([
@@ -190,16 +231,21 @@ export const useStore = defineStore('moran', () => {
   }
 
   return {
+    myCode,
+    viewingCode,
     entries,
     questions,
     progress,
     etfs,
     isLoading,
+    isReadOnly,
     sortedEntries,
     sources,
     todayProgress,
     isTodayCompleted,
     init,
+    switchToCode,
+    backToMyCode,
     addEntry,
     deleteEntry,
     setQuestions,
