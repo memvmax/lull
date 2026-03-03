@@ -88,7 +88,7 @@ function handleKeydown(e: KeyboardEvent) {
 function autoResize() {
   if (textareaRef.value) {
     textareaRef.value.style.height = 'auto'
-    textareaRef.value.style.height = textareaRef.value.scrollHeight + 'px'
+    textareaRef.value.style.height = Math.min(textareaRef.value.scrollHeight, 120) + 'px'
   }
 }
 
@@ -105,25 +105,33 @@ onMounted(() => {
 
 <template>
   <div class="cmd-input-wrapper" :class="{ 'ai-mode': aiMode }">
-    <div class="display-layer" v-html="displayHtml"></div>
-    <textarea
-      ref="textareaRef"
-      :value="modelValue"
-      :placeholder="placeholder"
-      :disabled="disabled"
-      rows="1"
-      @input="handleInput"
-      @keydown="handleKeydown"
-      autocomplete="off"
-      spellcheck="false"
-    ></textarea>
+    <div class="input-inner">
+      <div class="display-layer" v-html="displayHtml"></div>
+      <textarea
+        ref="textareaRef"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        rows="1"
+        @input="handleInput"
+        @keydown="handleKeydown"
+        autocomplete="off"
+        spellcheck="false"
+      ></textarea>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .cmd-input-wrapper {
-  position: relative;
   flex: 1;
+  display: flex;
+  align-items: flex-end;
+}
+
+.input-inner {
+  position: relative;
+  width: 100%;
 }
 
 .display-layer {

@@ -6,6 +6,7 @@ import QuestionModal from '@/components/QuestionModal.vue'
 import CountdownPage from '@/components/CountdownPage.vue'
 import SettingsModal from '@/components/SettingsModal.vue'
 import CommandInput from '@/components/CommandInput.vue'
+import EditEntryModal from '@/components/EditEntryModal.vue'
 import LoginPage from '@/components/LoginPage.vue'
 
 type Page = 'notes' | 'stats' | 'read'
@@ -50,6 +51,12 @@ const savedEtfs = ref<ETF[]>([])
 const helpVisible = ref(false)
 
 const displayEntries = ref<DisplayEntry[]>([])
+const editingEntry = ref<DisplayEntry | null>(null)
+
+const isGMMode = computed(() => {
+  const code = localStorage.getItem('moran-my-code') || ''
+  return code === 'MM1024'
+})
 
 const pageLabelsZh: Record<Page, string> = {
   notes: '笔记',
@@ -496,6 +503,49 @@ function saveToCurrentCode() {
   localStorage.setItem('moran-stocks-' + code, JSON.stringify(savedStocks.value))
   localStorage.setItem('moran-etfs-' + code, JSON.stringify(savedEtfs.value))
 }
+
+function openEditModal(entry: DisplayEntry) {
+  editingEntry.value = entry
+}
+
+function closeEditModal() {
+  editingEntry.value = null
+}
+
+function handleDeleteEntry(id: string) {
+  displayEntries.value = displayEntries.value.filter(e => e.id !== id)
+  saveEntriesToStorage()
+  closeEditModal()
+}
+
+function handleSaveEntry(id: string, data: { source: string; time: string }) {
+  const entry = displayEntries.value.find(e => e.id === id)
+  if (entry) {
+    entry.source = data.source
+    entry.time = data.time
+    saveEntriesToStorage()
+  }
+  closeEditModal()
+}
+
+function saveEntriesToStorage() {
+  const code = localStorage.getItem('moran-my-code') || ''
+  const dataKey = code ? `moran-data-${code}` : 'moran-data'
+  const stored = localStorage.getItem(dataKey)
+  let data: any = { entries: [], questions: [], progress: [] }
+  if (stored) {
+    data = JSON.parse(stored)
+  }
+  
+  data.entries = displayEntries.value.map(e => ({
+    id: e.id,
+    content: e.content,
+    source: e.source,
+    createdAt: new Date().toISOString()
+  })).reverse()
+  
+  localStorage.setItem(dataKey, JSON.stringify(data))
+}
 </script>
 
 <template>
@@ -584,8 +634,16 @@ function saveToCurrentCode() {
           </div>
 
           <div v-if="currentPage === 'notes'" class="entries-list">
-            <article v-for="entry in displayEntries" :key="entry.id" class="entry">
-              <div class="meta">{{ entry.time }} · {{ entry.source }}</div>
+            <article v-for="entry in displayEntries" :key="entry.id" class="entry" :class="{ 'gm-mode': isGMMode }">
+              <div class="meta">
+                <span>{{ entry.time }} · {{ entry.source }}</span>
+                <button v-if="isGMMode" class="edit-btn" @click="openEditModal(entry)" title="编辑">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+              </div>
               <div class="text">{{ entry.content }}</div>
             </article>
             
@@ -664,6 +722,15 @@ function saveToCurrentCode() {
         </div>
       </template>
     </template>
+    
+    <EditEntryModal
+      v-if="editingEntry"
+      :entry="editingEntry"
+      :lang="lang"
+      @close="closeEditModal"
+      @delete="handleDeleteEntry"
+      @save="handleSaveEntry"
+    />
   </div>
 </template>
 
@@ -858,12 +925,33 @@ function saveToCurrentCode() {
   animation: fadeIn 0.6s ease-out;
 }
 
+.entry.gm-mode:hover .edit-btn {
+  opacity: 1;
+}
+
 .meta {
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-secondary);
   letter-spacing: 0.5px;
   margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.edit-btn {
+  opacity: 0;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  transition: all 0.2s ease;
+}
+
+.edit-btn:hover {
+  color: var(--text-secondary);
 }
 
 .text {
