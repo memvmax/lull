@@ -56,10 +56,13 @@ async function loadFromSupabase(code: string) {
     return { entries: [], questions: [], progress: [], etfs: [] }
   }
   
+  console.log('Loaded from Supabase for code:', code, data)
+  
   const result: StorageData = { entries: [], questions: [], progress: [], etfs: [] }
   
   if (data) {
     for (const item of data) {
+      console.log('Processing item:', item.data_type, item.data)
       if (item.data_type === 'entries') {
         result.entries = item.data?.entries?.map((e: any) => ({ ...e, createdAt: new Date(e.createdAt) })) || []
       } else if (item.data_type === 'questions') {
@@ -72,11 +75,14 @@ async function loadFromSupabase(code: string) {
     }
   }
   
+  console.log('Result:', result)
   return result
 }
 
 async function saveToSupabase(code: string, dataType: string, data: any) {
   if (!code) return
+  
+  console.log('Saving to Supabase:', { code, dataType, data })
   
   const { error } = await supabase
     .from('user_data')
@@ -91,6 +97,8 @@ async function saveToSupabase(code: string, dataType: string, data: any) {
   
   if (error) {
     console.error('Failed to save to Supabase:', error)
+  } else {
+    console.log('Saved successfully:', dataType)
   }
 }
 
@@ -137,9 +145,11 @@ export const useStore = defineStore('moran', () => {
 
   async function init() {
     isLoading.value = true
+    console.log('Init with viewingCode:', viewingCode.value, 'myCode:', myCode.value)
     const code = viewingCode.value
     if (code) {
       const data = await loadFromSupabase(code)
+      console.log('Loaded data:', data)
       entries.value = data.entries
       questions.value = data.questions
       progress.value = data.progress
@@ -160,7 +170,7 @@ export const useStore = defineStore('moran', () => {
     await init()
   }
 
-  function addEntry(content: string, source: string) {
+  async function addEntry(content: string, source: string) {
     if (isReadOnly.value) return
     const entry: Entry = {
       id: crypto.randomUUID(),
@@ -169,7 +179,7 @@ export const useStore = defineStore('moran', () => {
       createdAt: new Date()
     }
     entries.value.push(entry)
-    save()
+    await save()
   }
 
   function deleteEntry(id: string) {
