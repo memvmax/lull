@@ -22,7 +22,13 @@ function getMyCode(): string {
 }
 
 function getViewingCode(): string {
-  return localStorage.getItem('moran-viewing-code') || getMyCode()
+  const viewingCode = localStorage.getItem('moran-viewing-code')
+  const myCode = getMyCode()
+  if (!viewingCode || viewingCode === myCode) {
+    localStorage.removeItem('moran-viewing-code')
+    return myCode
+  }
+  return viewingCode
 }
 
 function setViewingCode(code: string) {
