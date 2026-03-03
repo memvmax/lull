@@ -1,33 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || ''
+const supabaseUrl = 'https://syuctkukwisgcfiybsfy.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dWN0a3Vrd2lzZ2NmaXlic2Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MjY5MDAsImV4cCI6MjA4ODEwMjkwMH0.yGPk0WQri-Oa8KjveEPj2AFZkcmPcR-np9GuZfbO6EM'
 
-export const isSupabaseConfigured = supabaseUrl !== '' && supabaseAnonKey !== ''
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-export const supabase = isSupabaseConfigured 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null
+export const isSupabaseConfigured = true
 
-export type User = {
+export interface User {
   id: string
   email: string
-  created_at: string
-}
-
-export type Entry = {
-  id: string
-  user_id: string
-  content: string
-  source: string
-  created_at: string
-}
-
-export type DailyProgress = {
-  id: string
-  user_id: string
-  date: string
-  completed: boolean
-  answers: Record<string, boolean>
   created_at: string
 }

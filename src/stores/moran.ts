@@ -1,30 +1,14 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type { Entry, DailyQuestion, DayProgress } from '@/types'
+import { supabase } from '@/lib/supabase'
 
-const STORAGE_KEY = 'moran-data'
-
-interface StorageData {
-  entries: Entry[]
-  questions: DailyQuestion[]
-  progress: DayProgress[]
+const DATA_TYPES = {
+  USER_DATA: 'user_data'
 }
 
-function loadFromStorage(): StorageData {
-  const stored = localStorage.getItem(STORAGE_KEY)
-  if (stored) {
-    const data = JSON.parse(stored)
-    return {
-      entries: data.entries?.map((e: Entry) => ({ ...e, createdAt: new Date(e.createdAt) })) || [],
-      questions: data.questions || [],
-      progress: data.progress || []
-    }
-  }
-  return { entries: [], questions: [], progress: [] }
-}
-
-function saveToStorage(data: StorageData) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+function getCode(): string {
+  return localStorage.getItem('moran-my-code') || ''
 }
 
 function formatTime(date: Date): string {
@@ -33,10 +17,72 @@ function formatTime(date: Date): string {
   return `${hours}:${minutes}`
 }
 
+async function loadFromSupabase(code: string) {
+  if (!code) {
+    return { entries: [], questions: [], progress: [], etfs: [] }
+  }
+  
+  const { data, error } = await supabase
+    .from('user_data')
+    .select('data_type, data')
+    .eq('code', code)
+  
+  if (error) {
+    console.error('Failed to load from Supabase:', error)
+    return { entries: [], questions: [], progress: [], etfs: [] }
+  }
+  
+  const result: StorageData = { entries: [], questions: [], progress: [], etfs: [] }
+  
+  if (data) {
+    for (const item of data) {
+      if (item.data_type === 'entries') {
+        result.entries = item.data?.entries?.map((e: any) => ({ ...e, createdAt: new Date(e.createdAt) })) || []
+      } else if (item.data_type === 'questions') {
+        result.questions = item.data?.questions || []
+      } else if (item.data_type === 'progress') {
+        result.progress = item.data?.progress || []
+      } else if (item.data_type === 'etfs') {
+        result.etfs = item.data?.etfs || []
+      }
+    }
+  }
+  
+  return result
+}
+
+async function saveToSupabase(code: string, dataType: string, data: any) {
+  if (!code) return
+  
+  const { error } = await supabase
+    .from('user_data')
+    .upsert({
+      code,
+      data_type: dataType,
+      data,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'code,data_type'
+    })
+  
+  if (error) {
+    console.error('Failed to save to Supabase:', error)
+  }
+}
+
+interface StorageData {
+  entries: Entry[]
+  questions: DailyQuestion[]
+  progress: DayProgress[]
+  etfs: any[]
+}
+
 export const useStore = defineStore('moran', () => {
-  const entries = ref<Entry[]>(loadFromStorage().entries)
-  const questions = ref<DailyQuestion[]>(loadFromStorage().questions)
-  const progress = ref<DayProgress[]>(loadFromStorage().progress)
+  const entries = ref<Entry[]>([])
+  const questions = ref<DailyQuestion[]>([])
+  const progress = ref<DayProgress[]>([])
+  const etfs = ref<any[]>([])
+  const isLoading = ref(true)
 
   const sortedEntries = computed(() => {
     return [...entries.value]
@@ -60,6 +106,19 @@ export const useStore = defineStore('moran', () => {
   const isTodayCompleted = computed(() => {
     return todayProgress.value?.completed || false
   })
+
+  async function init() {
+    isLoading.value = true
+    const code = getCode()
+    if (code) {
+      const data = await loadFromSupabase(code)
+      entries.value = data.entries
+      questions.value = data.questions
+      progress.value = data.progress
+      etfs.value = data.etfs || []
+    }
+    isLoading.value = false
+  }
 
   function addEntry(content: string, source: string) {
     const entry: Entry = {
@@ -113,26 +172,39 @@ export const useStore = defineStore('moran', () => {
     }
   }
 
-  function save() {
-    saveToStorage({
-      entries: entries.value,
-      questions: questions.value,
-      progress: progress.value
-    })
+  function setEtfs(newEtfs: any[]) {
+    etfs.value = newEtfs
+    save()
+  }
+
+  async function save() {
+    const code = getCode()
+    if (!code) return
+    
+    await Promise.all([
+      saveToSupabase(code, 'entries', { entries: entries.value }),
+      saveToSupabase(code, 'questions', { questions: questions.value }),
+      saveToSupabase(code, 'progress', { progress: progress.value }),
+      saveToSupabase(code, 'etfs', { etfs: etfs.value })
+    ])
   }
 
   return {
     entries,
     questions,
     progress,
+    etfs,
+    isLoading,
     sortedEntries,
     sources,
     todayProgress,
     isTodayCompleted,
+    init,
     addEntry,
     deleteEntry,
     setQuestions,
     completeDay,
-    undoCompleteDay
+    undoCompleteDay,
+    setEtfs
   }
 })
