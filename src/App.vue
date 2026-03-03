@@ -7,6 +7,8 @@ import CountdownPage from '@/components/CountdownPage.vue'
 import SettingsModal from '@/components/SettingsModal.vue'
 import CommandInput from '@/components/CommandInput.vue'
 import EditEntryModal from '@/components/EditEntryModal.vue'
+import EtfSetupPanel from '@/components/EtfSetupPanel.vue'
+import EtfListPanel from '@/components/EtfListPanel.vue'
 import LoginPage from '@/components/LoginPage.vue'
 
 type Page = 'notes' | 'stats' | 'read'
@@ -19,9 +21,14 @@ interface StockData {
   yearChange: number
 }
 
+interface EtfStock {
+  symbol: string
+  weight: number
+}
+
 interface ETF {
   name: string
-  symbols: string[]
+  stocks: EtfStock[]
 }
 
 interface DisplayEntry {
@@ -49,6 +56,9 @@ const etfResults = ref<(StockData & { symbol: string })[]>([])
 const savedStocks = ref<StockData[]>([])
 const savedEtfs = ref<ETF[]>([])
 const helpVisible = ref(false)
+const showEtfSetup = ref(false)
+const showEtfList = ref(false)
+const editingEtfName = ref('')
 
 const displayEntries = ref<DisplayEntry[]>([])
 const editingEntry = ref<DisplayEntry | null>(null)
@@ -191,22 +201,19 @@ function parseInput(raw: string) {
     return { type: 'help' }
   }
   
+  if (trimmed === '/etfsetup') {
+    showEtfSetup.value = !showEtfSetup.value
+    return { type: 'etfsetup-toggle' }
+  }
+  
+  if (trimmed === '/etf') {
+    showEtfList.value = !showEtfList.value
+    return { type: 'etf-toggle' }
+  }
+  
   const codeMatch = trimmed.match(/^\/code\s+(\S+)/i)
   if (codeMatch && codeMatch[1]) {
     return { type: 'code', symbol: codeMatch[1] }
-  }
-  
-  const etfSetupMatch = trimmed.match(/^\/etf\s+(\S+)\s+setup/i)
-  if (etfSetupMatch && etfSetupMatch[1]) {
-    etfSetupMode.value = true
-    currentEtfName.value = etfSetupMatch[1].toLowerCase()
-    return { type: 'etf-setup', name: currentEtfName.value }
-  }
-  
-  if (trimmed === '/etf end') {
-    etfSetupMode.value = false
-    currentEtfName.value = ''
-    return { type: 'etf-end' }
   }
   
   const etfQueryMatch = trimmed.match(/^\/etf\s+(\S+)/i)
@@ -244,31 +251,12 @@ async function handleSubmit() {
   
   const parsed = parseInput(inputValue.value)
   
-  if (parsed.type === 'ai-toggle') {
-    inputValue.value = ''
-    return
-  }
-  
-  if (parsed.type === 'help') {
+  if (parsed.type === 'ai-toggle' || parsed.type === 'help' || parsed.type === 'etfsetup-toggle' || parsed.type === 'etf-toggle') {
     inputValue.value = ''
     return
   }
   
   if (parsed.type === 'code' && parsed.symbol) {
-    if (etfSetupMode.value) {
-      const existing = savedEtfs.value.find(e => e.name === currentEtfName.value)
-      if (existing) {
-        if (!existing.symbols.includes(parsed.symbol)) {
-          existing.symbols.push(parsed.symbol)
-        }
-      } else {
-        savedEtfs.value.push({ name: currentEtfName.value, symbols: [parsed.symbol] })
-      }
-      localStorage.setItem(getStorageKey('moran-etfs'), JSON.stringify(savedEtfs.value))
-      inputValue.value = ''
-      return
-    }
-    
     isLoading.value = true
     const data = await fetchStock(parsed.symbol)
     if (data) {
@@ -287,16 +275,6 @@ async function handleSubmit() {
     return
   }
   
-  if (parsed.type === 'etf-setup') {
-    inputValue.value = ''
-    return
-  }
-  
-  if (parsed.type === 'etf-end') {
-    inputValue.value = ''
-    return
-  }
-  
   if (parsed.type === 'etf-query' && parsed.name) {
     isLoading.value = true
     stockResult.value = null
@@ -305,8 +283,8 @@ async function handleSubmit() {
     const etf = savedEtfs.value.find(e => e.name === parsed.name)
     if (etf) {
       const results: (StockData & { symbol: string })[] = []
-      for (const symbol of etf.symbols) {
-        const data = await fetchStock(symbol)
+      for (const stock of etf.stocks) {
+        const data = await fetchStock(stock.symbol)
         if (data) {
           results.push({ ...data, symbol: data.symbol })
         }
@@ -546,6 +524,46 @@ function saveEntriesToStorage() {
   
   localStorage.setItem(dataKey, JSON.stringify(data))
 }
+
+function handleSaveEtf(data: { name: string; symbol: string; weight: number }) {
+  const existing = savedEtfs.value.find(e => e.name === data.name)
+  if (existing) {
+    const existingStock = existing.stocks.find(s => s.symbol === data.symbol)
+    if (existingStock) {
+      existingStock.weight = data.weight
+    } else {
+      existing.stocks.push({ symbol: data.symbol, weight: data.weight })
+    }
+  } else {
+    savedEtfs.value.push({
+      name: data.name,
+      stocks: [{ symbol: data.symbol, weight: data.weight }]
+    })
+  }
+  localStorage.setItem(getStorageKey('moran-etfs'), JSON.stringify(savedEtfs.value))
+}
+
+function handleDeleteEtf(name: string) {
+  savedEtfs.value = savedEtfs.value.filter(e => e.name !== name)
+  localStorage.setItem(getStorageKey('moran-etfs'), JSON.stringify(savedEtfs.value))
+}
+
+function handleEditEtf(name: string) {
+  editingEtfName.value = name
+  showEtfList.value = false
+  showEtfSetup.value = true
+}
+
+function handleDeleteEtfStock(etfName: string, symbol: string) {
+  const etf = savedEtfs.value.find(e => e.name === etfName)
+  if (etf) {
+    etf.stocks = etf.stocks.filter(s => s.symbol !== symbol)
+    if (etf.stocks.length === 0) {
+      savedEtfs.value = savedEtfs.value.filter(e => e.name !== etfName)
+    }
+    localStorage.setItem(getStorageKey('moran-etfs'), JSON.stringify(savedEtfs.value))
+  }
+}
 </script>
 
 <template>
@@ -611,16 +629,16 @@ function saveEntriesToStorage() {
                 <span class="help-desc">{{ lang === 'zh' ? '查询股票' : 'Query stock' }}</span>
               </div>
               <div class="help-item">
-                <code class="help-code">/etf 名称 setup</code>
-                <span class="help-desc">{{ lang === 'zh' ? '创建组合' : 'Create portfolio' }}</span>
+                <code class="help-code">/etfsetup</code>
+                <span class="help-desc">{{ lang === 'zh' ? '创建/编辑组合' : 'Create/Edit portfolio' }}</span>
+              </div>
+              <div class="help-item">
+                <code class="help-code">/etf</code>
+                <span class="help-desc">{{ lang === 'zh' ? '查看所有组合' : 'View all portfolios' }}</span>
               </div>
               <div class="help-item">
                 <code class="help-code">/etf 名称</code>
                 <span class="help-desc">{{ lang === 'zh' ? '查询组合' : 'Query portfolio' }}</span>
-              </div>
-              <div class="help-item">
-                <code class="help-code">/etf end</code>
-                <span class="help-desc">{{ lang === 'zh' ? '结束组合创建' : 'End portfolio creation' }}</span>
               </div>
               <div class="help-item">
                 <code class="help-code">/help</code>
@@ -629,9 +647,23 @@ function saveEntriesToStorage() {
             </div>
           </div>
 
-          <div v-if="etfSetupMode" class="etf-setup-hint">
-            {{ lang === 'zh' ? '正在创建组合' : 'Creating portfolio' }}: <strong>{{ currentEtfName }}</strong> · {{ lang === 'zh' ? '输入 /code 添加股票' : 'Enter /code to add stocks' }} · /etf end
-          </div>
+          <EtfSetupPanel 
+            v-if="showEtfSetup" 
+            :lang="lang"
+            :editing-etf-name="editingEtfName"
+            @close="showEtfSetup = false; editingEtfName = ''"
+            @save="handleSaveEtf"
+          />
+
+          <EtfListPanel
+            v-if="showEtfList"
+            :etfs="savedEtfs"
+            :lang="lang"
+            @close="showEtfList = false"
+            @edit="handleEditEtf"
+            @delete="handleDeleteEtf"
+            @delete-stock="handleDeleteEtfStock"
+          />
 
           <div v-if="currentPage === 'notes'" class="entries-list">
             <article v-for="entry in displayEntries" :key="entry.id" class="entry" :class="{ 'gm-mode': isGMMode }">
@@ -694,7 +726,7 @@ function saveEntriesToStorage() {
               <h3 class="saved-stocks-title">{{ lang === 'zh' ? '已保存组合' : 'SAVED PORTFOLIOS' }}</h3>
               <div v-for="etf in savedEtfs" :key="etf.name" class="etf-item">
                 <span class="etf-name">{{ etf.name }}</span>
-                <span class="etf-count">{{ etf.symbols.length }} {{ lang === 'zh' ? '只' : 'stocks' }}</span>
+                <span class="etf-count">{{ etf.stocks.length }} {{ lang === 'zh' ? '只' : 'stocks' }}</span>
                 <button class="stock-remove-btn" @click="removeEtf(etf.name)">×</button>
               </div>
             </div>

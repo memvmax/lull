@@ -155,7 +155,7 @@ function copyCode() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 0;
+  height: 56px;
   border-bottom: 1px solid var(--border-color);
   background: transparent;
   border-left: none;
