@@ -171,7 +171,7 @@ textarea {
   color: transparent;
   caret-color: var(--text-primary);
   resize: none;
-  overflow-y: auto;
+  overflow-y: hidden;
 }
 
 .ai-mode textarea {

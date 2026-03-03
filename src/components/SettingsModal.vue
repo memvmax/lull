@@ -11,6 +11,7 @@ const emit = defineEmits<{
   toggleTheme: []
   toggleLang: []
   switchUser: [code: string]
+  setupQuestions: []
 }>()
 
 const myCheatCode = ref('')
@@ -73,6 +74,11 @@ function copyCode() {
         <button class="settings-item" @click="emit('toggleLang')">
           <span class="item-label">{{ lang === 'zh' ? '语言' : 'Language' }}</span>
           <span class="item-value">{{ lang === 'zh' ? '中文' : 'English' }}</span>
+        </button>
+        
+        <button class="settings-item" @click="emit('setupQuestions')">
+          <span class="item-label">{{ lang === 'zh' ? '每日问题' : 'Daily Questions' }}</span>
+          <span class="item-value">{{ lang === 'zh' ? '设置' : 'Setup' }}</span>
         </button>
         
         <div class="settings-item cheat-code-section">

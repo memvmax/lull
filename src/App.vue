@@ -9,6 +9,7 @@ import CommandInput from '@/components/CommandInput.vue'
 import EditEntryModal from '@/components/EditEntryModal.vue'
 import EtfSetupPanel from '@/components/EtfSetupPanel.vue'
 import EtfListPanel from '@/components/EtfListPanel.vue'
+import QuestionsSetupPanel from '@/components/QuestionsSetupPanel.vue'
 import LoginPage from '@/components/LoginPage.vue'
 
 type Page = 'notes' | 'stats' | 'read'
@@ -58,6 +59,7 @@ const savedEtfs = ref<ETF[]>([])
 const helpVisible = ref(false)
 const showEtfSetup = ref(false)
 const showEtfList = ref(false)
+const showQuestionsSetup = ref(false)
 const editingEtfName = ref('')
 const expandedEtf = ref<string | null>(null)
 const etfStockPrices = ref<Record<string, { price: number; change: number }>>({})
@@ -602,6 +604,11 @@ function handleDeleteEtfStock(etfName: string, symbol: string) {
     localStorage.setItem(getStorageKey('moran-etfs'), JSON.stringify(savedEtfs.value))
   }
 }
+
+function handleSaveQuestions(questions: string[]) {
+  store.setQuestions(questions)
+  showQuestionsSetup.value = false
+}
 </script>
 
 <template>
@@ -630,6 +637,7 @@ function handleDeleteEtfStock(etfName: string, symbol: string) {
         @toggle-theme="toggleTheme"
         @toggle-lang="toggleLang"
         @switch-user="handleSwitchUser"
+        @setup-questions="showQuestionsSetup = true"
       />
       
       <template v-else>
@@ -701,6 +709,14 @@ function handleDeleteEtfStock(etfName: string, symbol: string) {
             @edit="handleEditEtf"
             @delete="handleDeleteEtf"
             @delete-stock="handleDeleteEtfStock"
+          />
+
+          <QuestionsSetupPanel
+            v-if="showQuestionsSetup"
+            :questions="store.questions"
+            :lang="lang"
+            @close="showQuestionsSetup = false"
+            @save="handleSaveQuestions"
           />
 
           <div v-if="currentPage === 'notes'" class="entries-list">
@@ -1338,7 +1354,7 @@ function handleDeleteEtfStock(etfName: string, symbol: string) {
   width: 90%;
   max-width: 560px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 12px;
 }
 
