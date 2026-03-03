@@ -1459,6 +1459,7 @@ function handleAuthorSubmit(author: string) {
   max-width: 560px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
 }
 
