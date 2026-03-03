@@ -154,10 +154,10 @@ export const useStore = defineStore('moran', () => {
     await init()
   }
 
-  function backToMyCode() {
+  async function backToMyCode() {
     viewingCode.value = myCode.value
-    setViewingCode(myCode.value)
-    init()
+    localStorage.removeItem('moran-viewing-code')
+    await init()
   }
 
   function addEntry(content: string, source: string) {

@@ -426,8 +426,8 @@ async function handleVisitCommunity(code: string) {
   closeSettings()
 }
 
-function handleBackToMyCommunity() {
-  store.backToMyCode()
+async function handleBackToMyCommunity() {
+  await store.backToMyCode()
   closeSettings()
 }
 
