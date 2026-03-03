@@ -171,13 +171,18 @@ export const useStore = defineStore('moran', () => {
   }
 
   async function addEntry(content: string, source: string) {
-    if (isReadOnly.value) return
+    console.log('addEntry called, isReadOnly:', isReadOnly.value)
+    if (isReadOnly.value) {
+      console.log('addEntry blocked by isReadOnly')
+      return
+    }
     const entry: Entry = {
       id: crypto.randomUUID(),
       content,
       source,
       createdAt: new Date()
     }
+    console.log('Adding entry:', entry)
     entries.value.push(entry)
     await save()
   }
@@ -234,9 +239,18 @@ export const useStore = defineStore('moran', () => {
   }
 
   async function save() {
-    if (isReadOnly.value) return
+    console.log('save() called, isReadOnly:', isReadOnly.value, 'myCode:', myCode.value)
+    if (isReadOnly.value) {
+      console.log('save() blocked by isReadOnly')
+      return
+    }
     const code = myCode.value
-    if (!code) return
+    if (!code) {
+      console.log('save() blocked by no code')
+      return
+    }
+    
+    console.log('Saving entries:', entries.value)
     
     await Promise.all([
       saveToSupabase(code, 'entries', { entries: entries.value }),
