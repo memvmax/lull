@@ -10,6 +10,7 @@ import EditEntryModal from '@/components/EditEntryModal.vue'
 import EtfSetupPanel from '@/components/EtfSetupPanel.vue'
 import EtfListPanel from '@/components/EtfListPanel.vue'
 import QuestionsSetupPanel from '@/components/QuestionsSetupPanel.vue'
+import LinkSetupPanel from '@/components/LinkSetupPanel.vue'
 import LoginPage from '@/components/LoginPage.vue'
 
 type Page = 'notes' | 'stats' | 'read'
@@ -60,6 +61,10 @@ const helpVisible = ref(false)
 const showEtfSetup = ref(false)
 const showEtfList = ref(false)
 const showQuestionsSetup = ref(false)
+const showLinkSetup = ref(false)
+const linkSetupStep = ref<'link' | 'title' | 'author'>('link')
+const currentLink = ref('')
+const currentTitle = ref('')
 const editingEtfName = ref('')
 const expandedEtf = ref<string | null>(null)
 const etfStockPrices = ref<Record<string, { price: number; change: number }>>({})
@@ -217,6 +222,14 @@ function parseInput(raw: string) {
     return { type: 'help' }
   }
   
+  if (trimmed === '/link') {
+    showLinkSetup.value = !showLinkSetup.value
+    linkSetupStep.value = 'link'
+    currentLink.value = ''
+    currentTitle.value = ''
+    return { type: 'link-toggle' }
+  }
+  
   if (trimmed === '/etfsetup') {
     showEtfSetup.value = !showEtfSetup.value
     return { type: 'etfsetup-toggle' }
@@ -291,7 +304,7 @@ async function handleSubmit() {
   
   const parsed = parseInput(inputValue.value)
   
-  if (parsed.type === 'ai-toggle' || parsed.type === 'help' || parsed.type === 'etfsetup-toggle' || parsed.type === 'etf-toggle') {
+  if (parsed.type === 'ai-toggle' || parsed.type === 'help' || parsed.type === 'etfsetup-toggle' || parsed.type === 'etf-toggle' || parsed.type === 'link-toggle') {
     inputValue.value = ''
     return
   }
@@ -609,6 +622,47 @@ function handleSaveQuestions(questions: string[]) {
   store.setQuestions(questions)
   showQuestionsSetup.value = false
 }
+
+function handleLinkSubmit(link: string) {
+  currentLink.value = link
+  linkSetupStep.value = 'title'
+}
+
+function handleTitleSubmit(title: string) {
+  currentTitle.value = title
+  linkSetupStep.value = 'author'
+}
+
+function handleAuthorSubmit(author: string) {
+  const entry = {
+    id: crypto.randomUUID(),
+    content: `[${currentTitle.value}](${currentLink.value})`,
+    source: author,
+    createdAt: new Date().toISOString()
+  }
+  
+  const code = localStorage.getItem('moran-my-code') || ''
+  const dataKey = code ? `moran-data-${code}` : 'moran-data'
+  const stored = localStorage.getItem(dataKey)
+  let data: any = { entries: [], questions: [], progress: [] }
+  if (stored) {
+    data = JSON.parse(stored)
+  }
+  data.entries.push(entry)
+  localStorage.setItem(dataKey, JSON.stringify(data))
+  
+  displayEntries.value.unshift({
+    id: entry.id,
+    content: entry.content,
+    source: entry.source,
+    time: formatTime(new Date(entry.createdAt))
+  })
+  
+  showLinkSetup.value = false
+  currentLink.value = ''
+  currentTitle.value = ''
+  linkSetupStep.value = 'link'
+}
 </script>
 
 <template>
@@ -637,7 +691,7 @@ function handleSaveQuestions(questions: string[]) {
         @toggle-theme="toggleTheme"
         @toggle-lang="toggleLang"
         @switch-user="handleSwitchUser"
-        @setup-questions="showQuestionsSetup = true"
+        @setup-questions="showQuestionsSetup = true; closeSettings()"
       />
       
       <template v-else>
@@ -687,6 +741,10 @@ function handleSaveQuestions(questions: string[]) {
                 <span class="help-desc">{{ lang === 'zh' ? '查询组合' : 'Query portfolio' }}</span>
               </div>
               <div class="help-item">
+                <code class="help-code">/link</code>
+                <span class="help-desc">{{ lang === 'zh' ? '添加文章链接' : 'Add article link' }}</span>
+              </div>
+              <div class="help-item">
                 <code class="help-code">/help</code>
                 <span class="help-desc">{{ lang === 'zh' ? '显示帮助' : 'Show help' }}</span>
               </div>
@@ -717,6 +775,18 @@ function handleSaveQuestions(questions: string[]) {
             :lang="lang"
             @close="showQuestionsSetup = false"
             @save="handleSaveQuestions"
+          />
+
+          <LinkSetupPanel
+            v-if="showLinkSetup"
+            :lang="lang"
+            :step="linkSetupStep"
+            :current-link="currentLink"
+            :current-title="currentTitle"
+            @close="showLinkSetup = false"
+            @submit-link="handleLinkSubmit"
+            @submit-title="handleTitleSubmit"
+            @submit-author="handleAuthorSubmit"
           />
 
           <div v-if="currentPage === 'notes'" class="entries-list">
