@@ -59,6 +59,8 @@ const helpVisible = ref(false)
 const showEtfSetup = ref(false)
 const showEtfList = ref(false)
 const editingEtfName = ref('')
+const expandedEtf = ref<string | null>(null)
+const etfStockPrices = ref<Record<string, { price: number; change: number }>>({})
 
 const displayEntries = ref<DisplayEntry[]>([])
 const editingEntry = ref<DisplayEntry | null>(null)
@@ -118,7 +120,19 @@ onMounted(async () => {
   const etfsKey = code ? `moran-etfs-${code}` : 'moran-etfs'
   const savedEtfsData = localStorage.getItem(etfsKey)
   if (savedEtfsData) {
-    savedEtfs.value = JSON.parse(savedEtfsData)
+    const parsed = JSON.parse(savedEtfsData)
+    savedEtfs.value = parsed.map((etf: any) => {
+      if (etf.stocks) {
+        return etf
+      }
+      if (etf.symbols) {
+        return {
+          name: etf.name,
+          stocks: etf.symbols.map((s: string) => ({ symbol: s, weight: 100 / etf.symbols.length }))
+        }
+      }
+      return etf
+    })
   }
 })
 
@@ -243,6 +257,30 @@ async function fetchStock(symbol: string): Promise<StockData | null> {
     return data
   } catch {
     return null
+  }
+}
+
+async function fetchEtfStockPrices(etfName: string) {
+  const etf = savedEtfs.value.find(e => e.name === etfName)
+  if (!etf) return
+  
+  for (const stock of etf.stocks) {
+    const data = await fetchStock(stock.symbol)
+    if (data) {
+      etfStockPrices.value[stock.symbol] = {
+        price: data.price,
+        change: data.yearChange
+      }
+    }
+  }
+}
+
+function toggleEtfExpand(etfName: string) {
+  if (expandedEtf.value === etfName) {
+    expandedEtf.value = null
+  } else {
+    expandedEtf.value = etfName
+    fetchEtfStockPrices(etfName)
   }
 }
 
@@ -724,10 +762,30 @@ function handleDeleteEtfStock(etfName: string, symbol: string) {
 
             <div v-if="savedEtfs.length > 0" class="saved-etfs">
               <h3 class="saved-stocks-title">{{ lang === 'zh' ? '已保存组合' : 'SAVED PORTFOLIOS' }}</h3>
-              <div v-for="etf in savedEtfs" :key="etf.name" class="etf-item">
-                <span class="etf-name">{{ etf.name }}</span>
-                <span class="etf-count">{{ etf.stocks.length }} {{ lang === 'zh' ? '只' : 'stocks' }}</span>
-                <button class="stock-remove-btn" @click="removeEtf(etf.name)">×</button>
+              <div v-for="etf in savedEtfs" :key="etf.name" class="etf-item-wrapper">
+                <div class="etf-item" @click="toggleEtfExpand(etf.name)">
+                  <span class="etf-name">{{ etf.name }}</span>
+                  <div class="etf-item-right">
+                    <span class="etf-count">{{ etf.stocks.length }} {{ lang === 'zh' ? '只' : 'stocks' }}</span>
+                    <span class="expand-icon">{{ expandedEtf === etf.name ? '▼' : '▶' }}</span>
+                  </div>
+                </div>
+                <div v-if="expandedEtf === etf.name" class="etf-stocks-list">
+                  <div v-for="stock in etf.stocks" :key="stock.symbol" class="etf-stock-row">
+                    <span class="stock-symbol">{{ stock.symbol }}</span>
+                    <span class="stock-price" v-if="etfStockPrices[stock.symbol]">
+                      {{ etfStockPrices[stock.symbol]?.price?.toFixed(2) }}
+                    </span>
+                    <span class="stock-change" v-if="etfStockPrices[stock.symbol]" :class="{ positive: (etfStockPrices[stock.symbol]?.change ?? 0) >= 0, negative: (etfStockPrices[stock.symbol]?.change ?? 0) < 0 }">
+                      {{ formatChange(etfStockPrices[stock.symbol]?.change ?? 0) }}
+                    </span>
+                    <span class="stock-weight">{{ stock.weight.toFixed(1) }}%</span>
+                    <button class="remove-stock-btn" @click.stop="handleDeleteEtfStock(etf.name, stock.symbol)">×</button>
+                  </div>
+                  <button class="add-stock-btn" @click.stop="handleEditEtf(etf.name)">
+                    {{ lang === 'zh' ? '添加股票' : 'Add Stock' }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1150,12 +1208,27 @@ function handleDeleteEtfStock(etfName: string, symbol: string) {
   color: var(--text-secondary);
 }
 
+.etf-item-wrapper {
+  border-bottom: 1px solid var(--border-color);
+}
+
 .etf-item {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 16px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.etf-item:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.etf-item-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .etf-name {
@@ -1168,6 +1241,93 @@ function handleDeleteEtfStock(etfName: string, symbol: string) {
 .etf-count {
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.expand-icon {
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+.etf-stocks-list {
+  padding: 8px 0 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.etf-stock-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+}
+
+.etf-stock-row .stock-symbol {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.etf-stock-row .stock-price {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-right: 12px;
+}
+
+.etf-stock-row .stock-change {
+  font-size: 12px;
+  margin-right: 12px;
+}
+
+.etf-stock-row .stock-change.positive {
+  color: #4caf50;
+}
+
+.etf-stock-row .stock-change.negative {
+  color: #e53935;
+}
+
+.etf-stock-row .stock-weight {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-right: 12px;
+}
+
+.remove-stock-btn {
+  font-size: 16px;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.2s ease;
+}
+
+.remove-stock-btn:hover {
+  color: #e53935;
+}
+
+.add-stock-btn {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 8px 12px 0;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #2196f3;
+  background: transparent;
+  border: 1px solid #2196f3;
+  border-radius: 6px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-stock-btn:hover {
+  background: #2196f3;
+  color: #fff;
 }
 
 .input-container {
@@ -1185,20 +1345,20 @@ function handleDeleteEtfStock(etfName: string, symbol: string) {
 .send-btn {
   font-size: 13px;
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
+  background: transparent;
+  border: none;
   cursor: pointer;
-  padding: 6px 14px;
+  padding: 8px 14px;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.dark .send-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.send-btn:hover:not(:disabled) {
+  color: var(--text-primary);
 }
 
 .send-btn:hover:not(:disabled) {
