@@ -636,6 +636,7 @@ function handleTagsSubmit(tags: string[]) {
       :viewing-code="store.viewingCode"
       :is-read-only="store.isReadOnly"
       :questions="store.questions"
+      :progress="Object.fromEntries(store.progress.map(p => [p.date, p.completed]))"
       @close="closeSettings"
       @toggle-theme="toggleTheme"
       @toggle-lang="toggleLang"

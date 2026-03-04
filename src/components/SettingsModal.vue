@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import QuestionsSetupPanel from './QuestionsSetupPanel.vue'
+import CalendarPanel from './CalendarPanel.vue'
 import type { DailyQuestion } from '@/types'
 
 const props = defineProps<{
@@ -10,6 +11,7 @@ const props = defineProps<{
   viewingCode: string
   isReadOnly: boolean
   questions: DailyQuestion[]
+  progress: Record<string, boolean>
 }>()
 
 const emit = defineEmits<{
@@ -24,6 +26,7 @@ const emit = defineEmits<{
 const visitCode = ref('')
 const showVisitInput = ref(false)
 const showQuestionsPanel = ref(false)
+const showCalendarPanel = ref(false)
 
 function copyMyCode() {
   navigator.clipboard.writeText(props.myCode)
@@ -54,11 +57,25 @@ function handleSaveQuestions(questions: string[]) {
   emit('saveQuestions', questions)
   closeQuestionsPanel()
 }
+
+function openCalendarPanel() {
+  showCalendarPanel.value = true
+}
+
+function closeCalendarPanel() {
+  showCalendarPanel.value = false
+}
+
+const currentPanel = computed(() => {
+  if (showCalendarPanel.value) return 'calendar'
+  if (showQuestionsPanel.value) return 'questions'
+  return 'settings'
+})
 </script>
 
 <template>
   <div class="settings-overlay">
-    <button class="back-btn" @click="showQuestionsPanel ? closeQuestionsPanel() : emit('close')">
+    <button class="back-btn" @click="currentPanel !== 'settings' ? (showCalendarPanel ? closeCalendarPanel() : closeQuestionsPanel()) : emit('close')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M19 12H5M12 19l-7-7 7-7"/>
       </svg>
@@ -66,11 +83,11 @@ function handleSaveQuestions(questions: string[]) {
     
     <div class="settings-wrapper">
       <Transition name="slide" mode="out-in">
-        <div v-if="!showQuestionsPanel" class="settings-content" key="settings">
+        <div v-if="currentPanel === 'settings'" class="settings-content" key="settings">
           <div class="settings-list">
-            <button class="settings-item" disabled>
+            <button class="settings-item" @click="openCalendarPanel">
               <span class="item-label">{{ lang === 'zh' ? '日历' : 'Calendar' }}</span>
-              <span class="item-hint">{{ lang === 'zh' ? '即将推出' : 'Coming soon' }}</span>
+              <span class="item-value">{{ lang === 'zh' ? '查看' : 'View' }}</span>
             </button>
             
             <button class="settings-item" @click="emit('toggleTheme')">
@@ -139,12 +156,20 @@ function handleSaveQuestions(questions: string[]) {
           </div>
         </div>
         
-        <div v-else class="settings-content" key="questions">
+        <div v-else-if="currentPanel === 'questions'" class="settings-content" key="questions">
           <QuestionsSetupPanel
             :questions="questions"
             :lang="lang"
             @close="closeQuestionsPanel"
             @save="handleSaveQuestions"
+          />
+        </div>
+        
+        <div v-else class="settings-content" key="calendar">
+          <CalendarPanel
+            :lang="lang"
+            :progress="progress"
+            @close="closeCalendarPanel"
           />
         </div>
       </Transition>
