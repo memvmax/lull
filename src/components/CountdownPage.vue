@@ -97,7 +97,7 @@ function pad(num: number): string {
 }
 
 .countdown-number {
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
   font-size: 72px;
   font-weight: 400;
   color: #E8E6E1;
@@ -106,7 +106,7 @@ function pad(num: number): string {
 }
 
 .countdown-separator {
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
   font-size: 72px;
   color: rgba(232, 230, 225, 0.4);
   margin: 0 8px;
