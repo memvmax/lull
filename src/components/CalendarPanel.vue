@@ -8,6 +8,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
+  selectDate: [date: Date]
 }>()
 
 const today = new Date()
@@ -91,6 +92,10 @@ function goToToday() {
   currentYear.value = today.getFullYear()
   currentMonth.value = today.getMonth()
 }
+
+function handleDayClick(date: Date) {
+  emit('selectDate', date)
+}
 </script>
 
 <template>
@@ -130,6 +135,7 @@ function goToToday() {
           'is-today': isToday(day.date),
           'completed': isCompleted(day.date)
         }"
+        @click="handleDayClick(day.date)"
       >
         <span class="day-number">{{ day.date.getDate() }}</span>
         <div class="day-ring" :class="{ closed: isCompleted(day.date) }"></div>
@@ -248,6 +254,15 @@ function goToToday() {
   position: relative;
   border-radius: 8px;
   transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.calendar-day:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.dark .calendar-day:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .calendar-day.other-month {

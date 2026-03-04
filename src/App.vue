@@ -36,6 +36,7 @@ interface DisplayEntry {
   content: string
   source: string
   time: string
+  createdAt: Date
   type?: 'note' | 'link'
   link?: string
   category?: string
@@ -80,6 +81,14 @@ const displayEntries = computed(() => {
       return tags.includes(tagFilter.value!.toLowerCase())
     })
   }
+  
+  const selectedDateStr = `${currentDate.value.getFullYear()}-${String(currentDate.value.getMonth() + 1).padStart(2, '0')}-${String(currentDate.value.getDate()).padStart(2, '0')}`
+  entries = entries.filter(e => {
+    const entryDate = e.createdAt
+    const entryDateStr = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}-${String(entryDate.getDate()).padStart(2, '0')}`
+    return entryDateStr === selectedDateStr
+  })
+  
   return entries
 })
 const editingEntry = ref<DisplayEntry | null>(null)
@@ -578,6 +587,12 @@ function handleSaveQuestions(questions: string[]) {
   store.setQuestions(questions)
 }
 
+function handleCalendarSelectDate(date: Date) {
+  currentDate.value = date
+  closeSettings()
+  currentPage.value = 'notes'
+}
+
 function handleLinkSubmit(link: string) {
   currentLink.value = link
   linkSetupStep.value = 'title'
@@ -643,6 +658,7 @@ function handleTagsSubmit(tags: string[]) {
       @visit-community="handleVisitCommunity"
       @back-to-my-community="handleBackToMyCommunity"
       @save-questions="handleSaveQuestions"
+      @select-date="handleCalendarSelectDate"
     />
     
     <div v-if="showLinkSetup" class="link-setup-overlay">
@@ -673,6 +689,7 @@ function handleTagsSubmit(tags: string[]) {
       
       <div class="calendar-widget" :class="{ 'slide-left': slideDirection === 'left', 'slide-right': slideDirection === 'right' }" @touchstart="handleTouchStart" @touchend="handleTouchEnd">
         <button class="calendar-day prev" @click="selectDate(-1)">
+          <span class="day-month small">{{ monthNames[getAdjacentDate(-1).getMonth()] }}</span>
           <span class="day-num">{{ getAdjacentDate(-1).getDate() }}</span>
         </button>
         <div class="calendar-day current">
@@ -680,6 +697,7 @@ function handleTagsSubmit(tags: string[]) {
           <span class="day-num">{{ currentDay }}</span>
         </div>
         <button class="calendar-day next" @click="selectDate(1)">
+          <span class="day-month small">{{ monthNames[getAdjacentDate(1).getMonth()] }}</span>
           <span class="day-num">{{ getAdjacentDate(1).getDate() }}</span>
         </button>
       </div>
@@ -991,15 +1009,15 @@ function handleTagsSubmit(tags: string[]) {
 
 .calendar-day.prev,
 .calendar-day.next {
-  width: 32px;
-  height: 40px;
-  opacity: 0.25;
+  width: 36px;
+  height: 48px;
+  opacity: 0.35;
 }
 
 .calendar-day.prev:hover,
 .calendar-day.next:hover {
-  opacity: 0.5;
-  transform: scale(1.1);
+  opacity: 0.65;
+  transform: scale(1.05);
 }
 
 .calendar-day.prev:active,
@@ -1026,6 +1044,11 @@ function handleTagsSubmit(tags: string[]) {
   letter-spacing: 1.5px;
   color: var(--text-tertiary);
   margin-bottom: 1px;
+}
+
+.day-month.small {
+  font-size: 8px;
+  letter-spacing: 1px;
 }
 
 .day-num {

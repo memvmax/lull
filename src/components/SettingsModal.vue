@@ -21,6 +21,7 @@ const emit = defineEmits<{
   (e: 'visitCommunity', code: string): void
   (e: 'backToMyCommunity'): void
   (e: 'saveQuestions', questions: string[]): void
+  (e: 'selectDate', date: Date): void
 }>()
 
 const visitCode = ref('')
@@ -64,6 +65,11 @@ function openCalendarPanel() {
 
 function closeCalendarPanel() {
   showCalendarPanel.value = false
+}
+
+function handleSelectDate(date: Date) {
+  emit('selectDate', date)
+  closeCalendarPanel()
 }
 
 const currentPanel = computed(() => {
@@ -170,6 +176,7 @@ const currentPanel = computed(() => {
             :lang="lang"
             :progress="progress"
             @close="closeCalendarPanel"
+            @select-date="handleSelectDate"
           />
         </div>
       </Transition>
