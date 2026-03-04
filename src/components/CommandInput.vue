@@ -88,7 +88,7 @@ function handleKeydown(e: KeyboardEvent) {
 function autoResize() {
   if (textareaRef.value) {
     textareaRef.value.style.height = 'auto'
-    textareaRef.value.style.height = Math.min(textareaRef.value.scrollHeight, 120) + 'px'
+    textareaRef.value.style.height = Math.max(36, Math.min(textareaRef.value.scrollHeight, 120)) + 'px'
   }
 }
 
@@ -126,7 +126,7 @@ onMounted(() => {
 .cmd-input-wrapper {
   flex: 1;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
 }
 
 .input-inner {
@@ -140,8 +140,8 @@ onMounted(() => {
   left: 0;
   right: 0;
   font-size: 14px;
-  line-height: 1.4;
-  padding: 8px 0 8px 1.5ch;
+  line-height: 36px;
+  padding: 0 0 0 1.5ch;
   pointer-events: none;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -165,13 +165,15 @@ textarea {
   border: none;
   border-bottom: 1px solid var(--border-color);
   font-size: 14px;
-  line-height: 1.4;
-  padding: 8px 0 8px 1.5ch;
+  line-height: 36px;
+  padding: 0 0 0 1.5ch;
   outline: none;
   color: transparent;
   caret-color: var(--text-primary);
   resize: none;
   overflow-y: hidden;
+  display: flex;
+  align-items: center;
 }
 
 .ai-mode textarea {
