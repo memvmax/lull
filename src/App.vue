@@ -824,7 +824,7 @@ function handleTagsSubmit(tags: string[]) {
               @click="handleSubmit"
               :disabled="isLoading || !inputValue.trim()"
             >
-              {{ lang === 'zh' ? '发送' : 'Send' }}
+              {{ lang === 'zh' ? '发送' : 'SEND' }}
             </button>
           </div>
         </div>
@@ -1590,12 +1590,16 @@ function handleTagsSubmit(tags: string[]) {
 }
 
 .send-btn {
-  font-size: 13px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   color: var(--text-secondary);
   background: transparent;
-  border: none;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
   cursor: pointer;
-  padding: 8px 14px;
+  padding: 0 14px;
   transition: all 0.2s ease;
   flex-shrink: 0;
   height: 36px;
@@ -1604,19 +1608,17 @@ function handleTagsSubmit(tags: string[]) {
   justify-content: center;
 }
 
-.send-btn:hover:not(:disabled) {
-  color: var(--text-primary);
+.dark .send-btn {
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .send-btn:hover:not(:disabled) {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(0, 0, 0, 0.2);
 }
 
 .dark .send-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .send-btn:disabled {
