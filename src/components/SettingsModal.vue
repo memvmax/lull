@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import QuestionsSetupPanel from './QuestionsSetupPanel.vue'
+import type { DailyQuestion } from '@/types'
 
 const props = defineProps<{
   isDark?: boolean
@@ -7,6 +9,7 @@ const props = defineProps<{
   myCode: string
   viewingCode: string
   isReadOnly: boolean
+  questions: DailyQuestion[]
 }>()
 
 const emit = defineEmits<{
@@ -15,11 +18,12 @@ const emit = defineEmits<{
   (e: 'toggleLang'): void
   (e: 'visitCommunity', code: string): void
   (e: 'backToMyCommunity'): void
-  (e: 'setupQuestions'): void
+  (e: 'saveQuestions', questions: string[]): void
 }>()
 
 const visitCode = ref('')
 const showVisitInput = ref(false)
+const showQuestionsPanel = ref(false)
 
 function copyMyCode() {
   navigator.clipboard.writeText(props.myCode)
@@ -37,6 +41,19 @@ function handleVisit() {
 function handleBack() {
   emit('backToMyCommunity')
 }
+
+function openQuestionsPanel() {
+  showQuestionsPanel.value = true
+}
+
+function closeQuestionsPanel() {
+  showQuestionsPanel.value = false
+}
+
+function handleSaveQuestions(questions: string[]) {
+  emit('saveQuestions', questions)
+  closeQuestionsPanel()
+}
 </script>
 
 <template>
@@ -47,7 +64,7 @@ function handleBack() {
       </svg>
     </button>
     
-    <div class="settings-content">
+    <div class="settings-content" :class="{ blurred: showQuestionsPanel }">
       <div class="settings-list">
         <button class="settings-item" disabled>
           <span class="item-label">{{ lang === 'zh' ? '日历' : 'Calendar' }}</span>
@@ -64,7 +81,7 @@ function handleBack() {
           <span class="item-value">{{ lang === 'zh' ? '中文' : 'English' }}</span>
         </button>
         
-        <button class="settings-item" @click="emit('setupQuestions')">
+        <button class="settings-item" @click="openQuestionsPanel">
           <span class="item-label">{{ lang === 'zh' ? '每日问题' : 'Daily Questions' }}</span>
           <span class="item-value">{{ lang === 'zh' ? '设置' : 'Setup' }}</span>
         </button>
@@ -119,6 +136,17 @@ function handleBack() {
         </div>
       </div>
     </div>
+    
+    <Transition name="questions">
+      <div v-if="showQuestionsPanel" class="questions-overlay">
+        <QuestionsSetupPanel
+          :questions="questions"
+          :lang="lang"
+          @close="closeQuestionsPanel"
+          @save="handleSaveQuestions"
+        />
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -132,6 +160,7 @@ function handleBack() {
   background-color: var(--bg-primary);
   z-index: 100;
   padding: 20px;
+  overflow-y: auto;
 }
 
 .back-btn {
@@ -144,6 +173,7 @@ function handleBack() {
   cursor: pointer;
   padding: 4px;
   transition: color 0.2s ease;
+  z-index: 10;
 }
 
 .back-btn:hover {
@@ -153,6 +183,12 @@ function handleBack() {
 .settings-content {
   max-width: 480px;
   margin: 80px auto 0;
+  transition: filter 0.3s ease;
+}
+
+.settings-content.blurred {
+  filter: blur(4px);
+  pointer-events: none;
 }
 
 .settings-list {
@@ -362,5 +398,23 @@ function handleBack() {
 .confirm-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.questions-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.questions-enter-active,
+.questions-leave-active {
+  transition: all 0.3s ease;
+}
+
+.questions-enter-from,
+.questions-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
 }
 </style>

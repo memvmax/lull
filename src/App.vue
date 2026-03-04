@@ -60,7 +60,6 @@ const savedEtfs = computed(() => store.etfs)
 const helpVisible = ref(false)
 const showEtfSetup = ref(false)
 const showEtfList = ref(false)
-const showQuestionsSetup = ref(false)
 const showLinkSetup = ref(false)
 const linkSetupStep = ref<'link' | 'title' | 'author'>('link')
 const currentLink = ref('')
@@ -506,7 +505,6 @@ function handleDeleteEtfStock(etfName: string, symbol: string) {
 
 function handleSaveQuestions(questions: string[]) {
   store.setQuestions(questions)
-  showQuestionsSetup.value = false
 }
 
 function handleLinkSubmit(link: string) {
@@ -559,12 +557,13 @@ function handleAuthorSubmit(author: string) {
       :my-code="store.myCode"
       :viewing-code="store.viewingCode"
       :is-read-only="store.isReadOnly"
+      :questions="store.questions"
       @close="closeSettings"
       @toggle-theme="toggleTheme"
       @toggle-lang="toggleLang"
       @visit-community="handleVisitCommunity"
       @back-to-my-community="handleBackToMyCommunity"
-      @setup-questions="showQuestionsSetup = true; closeSettings()"
+      @save-questions="handleSaveQuestions"
     />
     
     <header class="top-bar">
@@ -639,14 +638,6 @@ function handleAuthorSubmit(author: string) {
             @edit="handleEditEtf"
             @delete="handleDeleteEtf"
             @delete-stock="handleDeleteEtfStock"
-          />
-
-          <QuestionsSetupPanel
-            v-if="showQuestionsSetup"
-            :questions="store.questions"
-            :lang="lang"
-            @close="showQuestionsSetup = false"
-            @save="handleSaveQuestions"
           />
 
           <LinkSetupPanel
