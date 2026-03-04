@@ -69,7 +69,19 @@ const editingEtfName = ref('')
 const expandedEtf = ref<string | null>(null)
 const etfStockPrices = ref<Record<string, { price: number; change: number }>>({})
 
-const displayEntries = computed(() => store.sortedEntries as DisplayEntry[])
+const tagFilter = ref<string | null>(null)
+
+const displayEntries = computed(() => {
+  let entries = store.sortedEntries as DisplayEntry[]
+  if (tagFilter.value) {
+    entries = entries.filter(e => {
+      const category = e.category || ''
+      const tags = category.split(',').map(t => t.trim().toLowerCase())
+      return tags.includes(tagFilter.value!.toLowerCase())
+    })
+  }
+  return entries
+})
 const editingEntry = ref<DisplayEntry | null>(null)
 
 const isGMMode = computed(() => {
@@ -212,6 +224,11 @@ function parseInput(raw: string) {
     return { type: 'etf-query', name: etfQueryMatch[1].toLowerCase() }
   }
   
+  const tagMatch = trimmed.match(/^\/tag\s+(.+)$/i)
+  if (tagMatch && tagMatch[1]) {
+    return { type: 'tag-filter', tag: tagMatch[1].trim() }
+  }
+  
   return { type: 'content', raw }
 }
 
@@ -267,6 +284,17 @@ async function handleSubmit() {
   const parsed = parseInput(inputValue.value)
   
   if (parsed.type === 'ai-toggle' || parsed.type === 'help' || parsed.type === 'etfsetup-toggle' || parsed.type === 'etf-toggle' || parsed.type === 'link-toggle') {
+    inputValue.value = ''
+    return
+  }
+  
+  if (parsed.type === 'tag-filter' && parsed.tag) {
+    if (tagFilter.value === parsed.tag.toLowerCase()) {
+      tagFilter.value = null
+    } else {
+      tagFilter.value = parsed.tag
+      currentPage.value = 'read'
+    }
     inputValue.value = ''
     return
   }
@@ -775,6 +803,11 @@ function handleTagsSubmit(tags: string[]) {
           </div>
           
           <div v-else-if="currentPage === 'read'" class="read-page">
+            <div v-if="tagFilter" class="tag-filter-bar">
+              <span class="tag-filter-label">{{ lang === 'zh' ? '筛选' : 'Filter' }}</span>
+              <span class="tag-filter-tag">{{ tagFilter }}</span>
+              <button class="tag-filter-clear" @click="tagFilter = null">×</button>
+            </div>
             <div v-if="displayEntries.filter(e => e.type === 'link').length === 0" class="empty-hint">
               {{ lang === 'zh' ? '暂无文章，使用 /link 添加' : 'No articles yet. Use /link to add' }}
             </div>
@@ -1098,6 +1131,50 @@ function handleTagsSubmit(tags: string[]) {
 .read-page {
   display: flex;
   flex-direction: column;
+}
+
+.tag-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+}
+
+.tag-filter-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.tag-filter-tag {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #3b82f6;
+}
+
+.tag-filter-clear {
+  margin-left: auto;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.tag-filter-clear:hover {
+  color: var(--text-primary);
 }
 
 .empty-hint {
