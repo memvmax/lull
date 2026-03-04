@@ -566,6 +566,26 @@ function handleAuthorSubmit(author: string) {
       @save-questions="handleSaveQuestions"
     />
     
+    <div v-if="showLinkSetup" class="link-setup-overlay">
+      <button class="back-btn" @click="showLinkSetup = false">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <div class="link-setup-content">
+        <LinkSetupPanel
+          :lang="lang"
+          :step="linkSetupStep"
+          :current-link="currentLink"
+          :current-title="currentTitle"
+          @close="showLinkSetup = false"
+          @submit-link="handleLinkSubmit"
+          @submit-title="handleTitleSubmit"
+          @submit-author="handleAuthorSubmit"
+        />
+      </div>
+    </div>
+    
     <header class="top-bar">
       <button class="page-btn" @click="cyclePage">
         {{ pageLabels[currentPage] }}
@@ -638,18 +658,6 @@ function handleAuthorSubmit(author: string) {
             @edit="handleEditEtf"
             @delete="handleDeleteEtf"
             @delete-stock="handleDeleteEtfStock"
-          />
-
-          <LinkSetupPanel
-            v-if="showLinkSetup"
-            :lang="lang"
-            :step="linkSetupStep"
-            :current-link="currentLink"
-            :current-title="currentTitle"
-            @close="showLinkSetup = false"
-            @submit-link="handleLinkSubmit"
-            @submit-title="handleTitleSubmit"
-            @submit-author="handleAuthorSubmit"
           />
 
           <div v-if="currentPage === 'notes'" class="entries-list">
@@ -866,6 +874,40 @@ function handleAuthorSubmit(author: string) {
 
 .settings-btn:hover {
   color: var(--text-secondary);
+}
+
+.link-setup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-primary);
+  z-index: 100;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.link-setup-overlay .back-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s ease;
+  z-index: 10;
+}
+
+.link-setup-overlay .back-btn:hover {
+  color: var(--text-secondary);
+}
+
+.link-setup-content {
+  max-width: 480px;
+  margin: 80px auto 0;
 }
 
 .main-content {

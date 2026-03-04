@@ -37,93 +37,65 @@ function handleSubmit() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div class="link-backdrop" @click.self="emit('close')">
-      <div class="link-panel">
-        <div class="panel-header">
-          <span class="panel-label">{{ lang === 'zh' ? '添加文章' : 'Add Article' }}</span>
-          <button class="close-btn" @click="emit('close')">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        
-        <div v-if="currentLink" class="preview-row">
-          <span class="preview-label">{{ lang === 'zh' ? '链接' : 'Link' }}</span>
-          <span class="preview-value">{{ currentLink }}</span>
-        </div>
-        
-        <div v-if="currentTitle" class="preview-row">
-          <span class="preview-label">{{ lang === 'zh' ? '标题' : 'Title' }}</span>
-          <span class="preview-value">{{ currentTitle }}</span>
-        </div>
-        
-        <div class="input-row">
-          <span class="input-label">
-            {{ step === 'link' 
-              ? (lang === 'zh' ? '链接' : 'Link')
-              : step === 'title'
-                ? (lang === 'zh' ? '标题' : 'Title')
-                : (lang === 'zh' ? '来源' : 'Source') }}
-          </span>
-          <input
-            v-model="inputValue"
-            type="text"
-            class="input-field"
-            :placeholder="step === 'link' 
-              ? (lang === 'zh' ? '粘贴链接' : 'Paste link')
-              : step === 'title'
-                ? (lang === 'zh' ? '输入标题' : 'Enter title')
-                : (lang === 'zh' ? '可选' : 'Optional')"
-            @keyup.enter="handleSubmit"
-          />
-        </div>
-        
-        <div class="panel-footer">
-          <button class="btn-cancel" @click="emit('close')">{{ lang === 'zh' ? '取消' : 'Cancel' }}</button>
-          <button class="btn-save" @click="handleSubmit" :disabled="!inputValue.trim() && step !== 'author'">
-            {{ step === 'author' ? (lang === 'zh' ? '保存' : 'Save') : (lang === 'zh' ? '下一步' : 'Next') }}
-          </button>
-        </div>
-      </div>
+  <div class="link-panel">
+    <div class="panel-title">
+      <span class="title-label">{{ lang === 'zh' ? '添加文章' : 'Add Article' }}</span>
     </div>
-  </Teleport>
+    
+    <div v-if="currentLink" class="preview-row">
+      <span class="preview-label">{{ lang === 'zh' ? '链接' : 'Link' }}</span>
+      <span class="preview-value">{{ currentLink }}</span>
+    </div>
+    
+    <div v-if="currentTitle" class="preview-row">
+      <span class="preview-label">{{ lang === 'zh' ? '标题' : 'Title' }}</span>
+      <span class="preview-value">{{ currentTitle }}</span>
+    </div>
+    
+    <div class="input-row">
+      <span class="input-label">
+        {{ step === 'link' 
+          ? (lang === 'zh' ? '链接' : 'Link')
+          : step === 'title'
+            ? (lang === 'zh' ? '标题' : 'Title')
+            : (lang === 'zh' ? '来源' : 'Source') }}
+      </span>
+      <input
+        v-model="inputValue"
+        type="text"
+        class="input-field"
+        :placeholder="step === 'link' 
+          ? (lang === 'zh' ? '粘贴链接' : 'Paste link')
+          : step === 'title'
+            ? (lang === 'zh' ? '输入标题' : 'Enter title')
+            : (lang === 'zh' ? '可选' : 'Optional')"
+        @keyup.enter="handleSubmit"
+      />
+    </div>
+    
+    <div class="panel-footer">
+      <button class="btn-cancel" @click="emit('close')">{{ lang === 'zh' ? '取消' : 'Cancel' }}</button>
+      <button class="btn-save" @click="handleSubmit" :disabled="!inputValue.trim() && step !== 'author'">
+        {{ step === 'author' ? (lang === 'zh' ? '保存' : 'Save') : (lang === 'zh' ? '下一步' : 'Next') }}
+      </button>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.link-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
 .link-panel {
-  background: var(--bg-primary);
-  width: 100%;
-  max-width: 400px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
 }
 
-.panel-header {
+.panel-title {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   height: 56px;
-  padding: 0 16px;
   border-bottom: 1px solid var(--border-color);
 }
 
-.panel-label {
+.title-label {
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 1.5px;
@@ -131,35 +103,11 @@ function handleSubmit() {
   color: var(--text-secondary);
 }
 
-.close-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-tertiary);
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.close-btn:hover {
-  color: var(--text-primary);
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.dark .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
 .preview-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   height: 56px;
-  padding: 0 16px;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -191,7 +139,6 @@ function handleSubmit() {
   justify-content: space-between;
   align-items: center;
   height: 56px;
-  padding: 0 16px;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -228,7 +175,6 @@ function handleSubmit() {
   justify-content: space-between;
   align-items: center;
   height: 56px;
-  padding: 0 16px;
 }
 
 .btn-cancel {
