@@ -968,6 +968,10 @@ function handleTagsSubmit(tags: string[]) {
 .settings-btn {
   position: absolute;
   right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 27px;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 1px;
@@ -976,7 +980,7 @@ function handleTagsSubmit(tags: string[]) {
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 0 8px;
   transition: color 0.2s ease;
 }
 

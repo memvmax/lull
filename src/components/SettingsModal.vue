@@ -245,8 +245,8 @@ const currentPanel = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 19px;
-  padding: 4px 8px;
+  height: 27px;
+  padding: 0 8px;
   color: var(--text-tertiary);
   background: transparent;
   border: none;
