@@ -61,9 +61,10 @@ const helpVisible = ref(false)
 const showEtfSetup = ref(false)
 const showEtfList = ref(false)
 const showLinkSetup = ref(false)
-const linkSetupStep = ref<'link' | 'title' | 'author'>('link')
+const linkSetupStep = ref<'link' | 'title' | 'author' | 'tags'>('link')
 const currentLink = ref('')
 const currentTitle = ref('')
+const currentAuthor = ref('')
 const editingEtfName = ref('')
 const expandedEtf = ref<string | null>(null)
 const etfStockPrices = ref<Record<string, { price: number; change: number }>>({})
@@ -518,15 +519,21 @@ function handleTitleSubmit(title: string) {
 }
 
 function handleAuthorSubmit(author: string) {
+  currentAuthor.value = author
+  linkSetupStep.value = 'tags'
+}
+
+function handleTagsSubmit(tags: string[]) {
   if (store.isReadOnly) return
   
   const entry = {
     id: crypto.randomUUID(),
     content: currentTitle.value,
-    source: author,
+    source: currentAuthor.value || 'Self',
     createdAt: new Date(),
     type: 'link' as const,
-    link: currentLink.value
+    link: currentLink.value,
+    category: tags.join(',')
   }
   
   store.entries.push(entry)
@@ -535,6 +542,7 @@ function handleAuthorSubmit(author: string) {
   showLinkSetup.value = false
   currentLink.value = ''
   currentTitle.value = ''
+  currentAuthor.value = ''
   linkSetupStep.value = 'link'
 }
 </script>
@@ -582,6 +590,7 @@ function handleAuthorSubmit(author: string) {
           @submit-link="handleLinkSubmit"
           @submit-title="handleTitleSubmit"
           @submit-author="handleAuthorSubmit"
+          @submit-tags="handleTagsSubmit"
         />
       </div>
     </div>
