@@ -19,6 +19,7 @@ const emit = defineEmits<{
 
 const source = ref(props.entry.source)
 const time = ref(props.entry.time)
+const showConfirm = ref(false)
 
 const timePattern = /^(\d{1,2}):(\d{2})$/
 const isTimeValid = computed(() => timePattern.test(time.value))
@@ -28,10 +29,16 @@ function handleSave() {
   emit('save', props.entry.id, { source: source.value, time: time.value })
 }
 
-function handleDelete() {
-  if (confirm(props.lang === 'zh' ? '确定删除这条记录吗？' : 'Delete this entry?')) {
-    emit('delete', props.entry.id)
-  }
+function handleDeleteClick() {
+  showConfirm.value = true
+}
+
+function handleConfirmDelete() {
+  emit('delete', props.entry.id)
+}
+
+function handleCancelDelete() {
+  showConfirm.value = false
 }
 </script>
 
@@ -59,12 +66,26 @@ function handleDelete() {
       </div>
       
       <div class="edit-actions">
-        <button class="delete-btn" @click="handleDelete">
+        <button class="delete-btn" @click="handleDeleteClick">
           {{ lang === 'zh' ? '删除' : 'Delete' }}
         </button>
         <button class="save-btn" @click="handleSave" :disabled="!isTimeValid">
           {{ lang === 'zh' ? '保存' : 'Save' }}
         </button>
+      </div>
+    </div>
+    
+    <div v-if="showConfirm" class="confirm-overlay" @click.self="handleCancelDelete">
+      <div class="confirm-card">
+        <p class="confirm-text">{{ lang === 'zh' ? '确定删除这条记录吗？' : 'Delete this entry?' }}</p>
+        <div class="confirm-actions">
+          <button class="cancel-btn" @click="handleCancelDelete">
+            {{ lang === 'zh' ? '取消' : 'Cancel' }}
+          </button>
+          <button class="confirm-btn" @click="handleConfirmDelete">
+            {{ lang === 'zh' ? '删除' : 'Delete' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -228,5 +249,73 @@ function handleDelete() {
 .save-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.confirm-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.confirm-card {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  padding: 24px;
+  width: 280px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.confirm-text {
+  font-size: 15px;
+  color: var(--text-primary);
+  text-align: center;
+  margin: 0 0 20px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.cancel-btn {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.confirm-btn {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  background: #e53935;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.confirm-btn:hover {
+  background: #c62828;
 }
 </style>
