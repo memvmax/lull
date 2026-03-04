@@ -621,7 +621,7 @@ function handleTagsSubmit(tags: string[]) {
 
 <template>
   <div class="app-container">
-    <CountdownPage v-if="store.isTodayCompleted" @back="handleBackFromCountdown" />
+    <CountdownPage v-if="store.isTodayCompleted" :lang="lang" @back="handleBackFromCountdown" />
       
     <SettingsModal
       v-if="showSettings"
