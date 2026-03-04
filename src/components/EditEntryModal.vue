@@ -43,240 +43,333 @@ function handleCancelDelete() {
 </script>
 
 <template>
-  <div class="edit-overlay">
-    <div class="edit-card">
-      <div class="edit-header">
-        <h3>{{ lang === 'zh' ? '编辑记录' : 'Edit Entry' }}</h3>
-        <button class="close-btn" @click="emit('close')">×</button>
-      </div>
-      
-      <div class="edit-content">
-        <p class="content-preview">{{ entry.content }}</p>
-      </div>
-      
-      <div class="edit-field">
-        <label>{{ lang === 'zh' ? '发言人' : 'Source' }}</label>
-        <input v-model="source" type="text" :placeholder="lang === 'zh' ? '输入发言人' : 'Enter source'" />
-      </div>
-      
-      <div class="edit-field">
-        <label>{{ lang === 'zh' ? '时间' : 'Time' }}</label>
-        <input v-model="time" type="text" placeholder="HH:MM" :class="{ invalid: !isTimeValid }" />
-        <span v-if="!isTimeValid" class="error-hint">{{ lang === 'zh' ? '格式: HH:MM' : 'Format: HH:MM' }}</span>
-      </div>
-      
-      <div class="edit-actions">
-        <button class="delete-btn" @click="handleDeleteClick">
-          {{ lang === 'zh' ? '删除' : 'Delete' }}
-        </button>
-        <button class="save-btn" @click="handleSave" :disabled="!isTimeValid">
-          {{ lang === 'zh' ? '保存' : 'Save' }}
-        </button>
-      </div>
-    </div>
-    
-    <div v-if="showConfirm" class="confirm-overlay" @click.self="handleCancelDelete">
-      <div class="confirm-card">
-        <p class="confirm-text">{{ lang === 'zh' ? '确定删除这条记录吗？' : 'Delete this entry?' }}</p>
-        <div class="confirm-actions">
-          <button class="cancel-btn" @click="handleCancelDelete">
-            {{ lang === 'zh' ? '取消' : 'Cancel' }}
-          </button>
-          <button class="confirm-btn" @click="handleConfirmDelete">
-            {{ lang === 'zh' ? '删除' : 'Delete' }}
-          </button>
+  <Teleport to="body">
+    <div class="edit-backdrop" @click.self="emit('close')">
+      <Transition name="modal">
+        <div v-if="!showConfirm" class="edit-modal">
+          <div class="modal-header">
+            <span class="modal-title">{{ lang === 'zh' ? '编辑记录' : 'Edit Entry' }}</span>
+            <button class="modal-close" @click="emit('close')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div class="modal-body">
+            <div class="content-preview">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+              </svg>
+              <span>{{ entry.content }}</span>
+            </div>
+            
+            <div class="form-group">
+              <label>{{ lang === 'zh' ? '发言人' : 'Source' }}</label>
+              <input v-model="source" type="text" :placeholder="lang === 'zh' ? '输入发言人' : 'Enter source'" />
+            </div>
+            
+            <div class="form-group">
+              <label>{{ lang === 'zh' ? '时间' : 'Time' }}</label>
+              <input v-model="time" type="text" placeholder="HH:MM" :class="{ invalid: !isTimeValid }" />
+              <span v-if="!isTimeValid" class="error-text">{{ lang === 'zh' ? '格式: HH:MM' : 'Format: HH:MM' }}</span>
+            </div>
+          </div>
+          
+          <div class="modal-footer">
+            <button class="btn-delete" @click="handleDeleteClick">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+              </svg>
+              <span>{{ lang === 'zh' ? '删除' : 'Delete' }}</span>
+            </button>
+            <button class="btn-save" @click="handleSave" :disabled="!isTimeValid">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                <path d="M17 21v-8H7v8M7 3v5h8"/>
+              </svg>
+              <span>{{ lang === 'zh' ? '保存' : 'Save' }}</span>
+            </button>
+          </div>
         </div>
-      </div>
+      </Transition>
+      
+      <Transition name="confirm">
+        <div v-if="showConfirm" class="confirm-modal" @click.self="handleCancelDelete">
+          <div class="confirm-content">
+            <div class="confirm-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v4M12 16h.01"/>
+              </svg>
+            </div>
+            <p class="confirm-title">{{ lang === 'zh' ? '确认删除' : 'Confirm Delete' }}</p>
+            <p class="confirm-desc">{{ lang === 'zh' ? '此操作无法撤销，确定要删除这条记录吗？' : 'This action cannot be undone. Are you sure?' }}</p>
+            <div class="confirm-actions">
+              <button class="btn-cancel" @click="handleCancelDelete">
+                {{ lang === 'zh' ? '取消' : 'Cancel' }}
+              </button>
+              <button class="btn-confirm" @click="handleConfirmDelete">
+                {{ lang === 'zh' ? '删除' : 'Delete' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped>
-.edit-overlay {
+.edit-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
+  z-index: 1000;
   padding: 20px;
 }
 
-.edit-card {
+.edit-modal {
   background: var(--bg-primary);
-  border-radius: 12px;
+  border-radius: 16px;
   width: 100%;
-  max-width: 400px;
-  padding: 24px;
+  max-width: 420px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
 }
 
-.edit-header {
+.modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.edit-header h3 {
-  font-size: 16px;
-  font-weight: 500;
+.modal-title {
+  font-size: 15px;
+  font-weight: 600;
   color: var(--text-primary);
-  margin: 0;
+  letter-spacing: -0.01em;
 }
 
-.close-btn {
-  font-size: 24px;
+.modal-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-tertiary);
   background: transparent;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
-  padding: 0;
-  line-height: 1;
+  transition: all 0.2s ease;
 }
 
-.close-btn:hover {
-  color: var(--text-secondary);
+.modal-close:hover {
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.05);
 }
 
-.edit-content {
-  margin-bottom: 20px;
+.dark .modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-body {
+  padding: 24px;
 }
 
 .content-preview {
-  font-size: 14px;
-  color: var(--text-secondary);
-  background: rgba(0, 0, 0, 0.05);
-  padding: 12px;
-  border-radius: 8px;
-  margin: 0;
-  max-height: 100px;
-  overflow-y: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 12px;
+  margin-bottom: 24px;
 }
 
 .dark .content-preview {
   background: rgba(255, 255, 255, 0.05);
 }
 
-.edit-field {
-  margin-bottom: 16px;
+.content-preview svg {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  margin-top: 2px;
 }
 
-.edit-field label {
+.content-preview span {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
   display: block;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.edit-field input {
+.form-group input {
   width: 100%;
-  font-size: 14px;
-  padding: 10px 12px;
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  font-size: 15px;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid transparent;
+  border-radius: 10px;
   color: var(--text-primary);
   outline: none;
   box-sizing: border-box;
+  transition: all 0.2s ease;
 }
 
-.dark .edit-field input {
+.dark .form-group input {
   background: rgba(255, 255, 255, 0.05);
 }
 
-.edit-field input:focus {
+.form-group input:focus {
   border-color: var(--text-secondary);
+  background: transparent;
 }
 
-.edit-field input.invalid {
-  border-color: #e53935;
+.form-group input.invalid {
+  border-color: #ef4444;
 }
 
-.error-hint {
-  font-size: 11px;
-  color: #e53935;
-  margin-top: 4px;
+.form-group input.invalid:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
-.edit-actions {
+.error-text {
+  display: block;
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: 6px;
+}
+
+.modal-footer {
   display: flex;
   gap: 12px;
-  margin-top: 24px;
+  padding: 20px 24px;
+  border-top: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.02);
 }
 
-.delete-btn {
+.dark .modal-footer {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.btn-delete, .btn-save {
   flex: 1;
-  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
   font-weight: 500;
-  color: #e53935;
+  padding: 12px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete {
+  color: #ef4444;
   background: transparent;
-  border: 1px solid #e53935;
-  border-radius: 8px;
-  padding: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-.delete-btn:hover {
-  background: #e53935;
-  color: #fff;
+.btn-delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
 }
 
-.save-btn {
-  flex: 1;
-  font-size: 13px;
-  font-weight: 500;
+.btn-save {
   color: #fff;
-  background: #2196f3;
+  background: #3b82f6;
   border: none;
-  border-radius: 8px;
-  padding: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
-.save-btn:hover:not(:disabled) {
-  background: #1976d2;
+.btn-save:hover:not(:disabled) {
+  background: #2563eb;
 }
 
-.save-btn:disabled {
+.btn-save:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.confirm-overlay {
+.confirm-modal {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
 }
 
-.confirm-card {
+.confirm-content {
   background: var(--bg-primary);
-  border-radius: 12px;
-  padding: 24px;
-  width: 280px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-radius: 20px;
+  padding: 32px;
+  width: 340px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
-.confirm-text {
-  font-size: 15px;
+.confirm-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 50%;
+  color: #ef4444;
+}
+
+.confirm-title {
+  font-size: 18px;
+  font-weight: 600;
   color: var(--text-primary);
-  text-align: center;
-  margin: 0 0 20px;
+  margin: 0 0 8px;
+}
+
+.confirm-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 28px;
+  line-height: 1.5;
 }
 
 .confirm-actions {
@@ -284,38 +377,63 @@ function handleCancelDelete() {
   gap: 12px;
 }
 
-.cancel-btn {
+.btn-cancel, .btn-confirm {
   flex: 1;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
+  padding: 12px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel {
   color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancel-btn:hover {
-  border-color: var(--text-secondary);
-  color: var(--text-primary);
-}
-
-.confirm-btn {
-  flex: 1;
-  font-size: 13px;
-  font-weight: 500;
-  color: #fff;
-  background: #e53935;
+  background: rgba(0, 0, 0, 0.05);
   border: none;
-  border-radius: 8px;
-  padding: 10px;
-  cursor: pointer;
+}
+
+.dark .btn-cancel {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-cancel:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.dark .btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-confirm {
+  color: #fff;
+  background: #ef4444;
+  border: none;
+}
+
+.btn-confirm:hover {
+  background: #dc2626;
+}
+
+.modal-enter-active,
+.modal-leave-active {
+  transition: all 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+  transform: scale(0.95) translateY(10px);
+}
+
+.confirm-enter-active,
+.confirm-leave-active {
   transition: all 0.2s ease;
 }
 
-.confirm-btn:hover {
-  background: #c62828;
+.confirm-enter-from,
+.confirm-leave-to {
+  opacity: 0;
+  transform: scale(0.9);
 }
 </style>
