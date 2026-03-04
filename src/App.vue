@@ -662,18 +662,28 @@ function handleAuthorSubmit(author: string) {
           />
 
           <div v-if="currentPage === 'notes'" class="entries-list">
-            <article v-for="entry in displayEntries.filter(e => e.type !== 'link')" :key="entry.id" class="entry" :class="{ 'gm-mode': isGMMode }">
-              <div class="meta">
-                <span>{{ entry.time }} · {{ entry.source }}</span>
-                <button v-if="isGMMode" class="edit-btn" @click="openEditModal(entry)" title="编辑">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                </button>
-              </div>
-              <div class="text">{{ entry.content }}</div>
-            </article>
+            <template v-for="entry in displayEntries.filter(e => e.type !== 'link')" :key="entry.id">
+              <article class="entry" :class="{ 'gm-mode': isGMMode, 'editing': editingEntry?.id === entry.id }">
+                <div class="meta">
+                  <span>{{ entry.time }} · {{ entry.source }}</span>
+                  <button v-if="isGMMode" class="edit-btn" @click="openEditModal(entry)" title="编辑">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="text">{{ entry.content }}</div>
+              </article>
+              <EditEntryModal
+                v-if="editingEntry?.id === entry.id"
+                :entry="editingEntry"
+                :lang="lang"
+                @close="closeEditModal"
+                @delete="handleDeleteEntry"
+                @save="handleSaveEntry"
+              />
+            </template>
             
             <div v-if="displayEntries.filter(e => e.type !== 'link').length > 0" class="complete-section">
               <button class="complete-btn" @click="handleCompleteReading">
@@ -760,18 +770,28 @@ function handleAuthorSubmit(author: string) {
             <div v-if="displayEntries.filter(e => e.type === 'link').length === 0" class="empty-hint">
               {{ lang === 'zh' ? '暂无文章，使用 /link 添加' : 'No articles yet. Use /link to add' }}
             </div>
-            <article v-for="entry in displayEntries.filter(e => e.type === 'link')" :key="entry.id" class="link-entry" :class="{ 'gm-mode': isGMMode }">
-              <div class="meta">
-                <span>{{ entry.time }} · {{ entry.source }}</span>
-                <button v-if="isGMMode" class="edit-btn" @click="openEditModal(entry)" title="编辑">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                </button>
-              </div>
-              <a :href="entry.link" target="_blank" rel="noopener noreferrer" class="link-title">{{ entry.content }}</a>
-            </article>
+            <template v-for="entry in displayEntries.filter(e => e.type === 'link')" :key="entry.id">
+              <article class="link-entry" :class="{ 'gm-mode': isGMMode, 'editing': editingEntry?.id === entry.id }">
+                <div class="meta">
+                  <span>{{ entry.time }} · {{ entry.source }}</span>
+                  <button v-if="isGMMode" class="edit-btn" @click="openEditModal(entry)" title="编辑">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                  </button>
+                </div>
+                <a :href="entry.link" target="_blank" rel="noopener noreferrer" class="link-title">{{ entry.content }}</a>
+              </article>
+              <EditEntryModal
+                v-if="editingEntry?.id === entry.id"
+                :entry="editingEntry"
+                :lang="lang"
+                @close="closeEditModal"
+                @delete="handleDeleteEntry"
+                @save="handleSaveEntry"
+              />
+            </template>
           </div>
         </main>
 
@@ -797,15 +817,6 @@ function handleAuthorSubmit(author: string) {
         <div v-else class="readonly-notice">
           {{ lang === 'zh' ? '只读模式 - 点击设置返回你的社区' : 'Read-only mode - Click settings to return to your community' }}
         </div>
-    
-    <EditEntryModal
-      v-if="editingEntry"
-      :entry="editingEntry"
-      :lang="lang"
-      @close="closeEditModal"
-      @delete="handleDeleteEntry"
-      @save="handleSaveEntry"
-    />
   </div>
 </template>
 
@@ -998,6 +1009,11 @@ function handleAuthorSubmit(author: string) {
 .entry {
   margin-bottom: 48px;
   animation: fadeIn 0.6s ease-out;
+}
+
+.entry.editing {
+  margin-bottom: 0;
+  border-bottom: none;
 }
 
 .entry.gm-mode:hover .edit-btn {

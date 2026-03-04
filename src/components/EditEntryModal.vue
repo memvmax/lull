@@ -40,7 +40,7 @@ function handleSave() {
   })
 }
 
-function handleDeleteClick() {
+function handleDelete() {
   showConfirm.value = true
 }
 
@@ -54,169 +54,145 @@ function handleCancelDelete() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div class="edit-backdrop" @click.self="emit('close')">
-      <Transition name="modal">
-        <div v-if="!showConfirm" class="edit-modal">
-          <div class="modal-row">
-            <input v-model="content" type="text" class="input-title" :placeholder="lang === 'zh' ? '标题' : 'Title'" />
-          </div>
-          
-          <div class="modal-row">
-            <input v-model="link" type="url" class="input-link" :placeholder="lang === 'zh' ? '链接' : 'Link'" />
-          </div>
-          
-          <div class="modal-row inline">
-            <input v-model="source" type="text" :placeholder="lang === 'zh' ? '作者' : 'Author'" />
-            <input v-model="time" type="text" placeholder="HH:MM" :class="{ invalid: !isTimeValid }" />
-          </div>
-          
-          <div class="modal-row">
-            <input v-model="category" type="text" :placeholder="lang === 'zh' ? '分类' : 'Category'" />
-          </div>
-          
-          <div class="modal-actions">
-            <button class="action-btn delete" @click="handleDeleteClick">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-              </svg>
-            </button>
-            <button class="action-btn save" @click="handleSave" :disabled="!isTimeValid">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 6L9 17l-5-5"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </Transition>
-      
-      <Transition name="confirm">
-        <div v-if="showConfirm" class="confirm-overlay" @click.self="handleCancelDelete">
-          <div class="confirm-card">
-            <div class="confirm-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 8v4M12 16h.01"/>
-              </svg>
-            </div>
-            <p class="confirm-text">{{ lang === 'zh' ? '确定删除？' : 'Delete?' }}</p>
-            <div class="confirm-actions">
-              <button class="confirm-btn cancel" @click="handleCancelDelete">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              </button>
-              <button class="confirm-btn confirm" @click="handleConfirmDelete">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20 6L9 17l-5-5"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
+  <div class="edit-panel">
+    <div class="edit-row">
+      <span class="edit-label">{{ lang === 'zh' ? '标题' : 'Title' }}</span>
+      <input v-model="content" type="text" class="edit-input" />
     </div>
-  </Teleport>
+    
+    <div class="edit-row">
+      <span class="edit-label">{{ lang === 'zh' ? '链接' : 'Link' }}</span>
+      <input v-model="link" type="url" class="edit-input" :placeholder="lang === 'zh' ? '可选' : 'Optional'" />
+    </div>
+    
+    <div class="edit-row">
+      <span class="edit-label">{{ lang === 'zh' ? '来源' : 'Source' }}</span>
+      <input v-model="source" type="text" class="edit-input" />
+    </div>
+    
+    <div class="edit-row">
+      <span class="edit-label">{{ lang === 'zh' ? '时间' : 'Time' }}</span>
+      <input v-model="time" type="text" class="edit-input" :class="{ invalid: !isTimeValid }" placeholder="HH:MM" />
+    </div>
+    
+    <div class="edit-row">
+      <span class="edit-label">{{ lang === 'zh' ? '关键词' : 'Tags' }}</span>
+      <input v-model="category" type="text" class="edit-input" :placeholder="lang === 'zh' ? '可选' : 'Optional'" />
+    </div>
+    
+    <div class="edit-actions">
+      <button class="action-btn delete" @click="handleDelete">
+        {{ lang === 'zh' ? '删除' : 'Delete' }}
+      </button>
+      <button class="action-btn cancel" @click="emit('close')">
+        {{ lang === 'zh' ? '取消' : 'Cancel' }}
+      </button>
+      <button class="action-btn save" @click="handleSave" :disabled="!isTimeValid">
+        {{ lang === 'zh' ? '保存' : 'Save' }}
+      </button>
+    </div>
+    
+    <Transition name="confirm">
+      <div v-if="showConfirm" class="confirm-overlay" @click.self="handleCancelDelete">
+        <div class="confirm-card">
+          <p class="confirm-text">{{ lang === 'zh' ? '确定删除？' : 'Delete?' }}</p>
+          <div class="confirm-actions">
+            <button class="confirm-btn cancel" @click="handleCancelDelete">{{ lang === 'zh' ? '取消' : 'No' }}</button>
+            <button class="confirm-btn confirm" @click="handleConfirmDelete">{{ lang === 'zh' ? '删除' : 'Yes' }}</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </div>
 </template>
 
 <style scoped>
-.edit-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.edit-modal {
+.edit-panel {
   background: var(--bg-primary);
-  border-radius: 16px;
-  width: 100%;
-  max-width: 380px;
-  padding: 8px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 16px;
 }
 
-.modal-row {
-  padding: 12px 16px;
-}
-
-.modal-row.inline {
+.edit-row {
   display: flex;
-  gap: 12px;
-}
-
-.modal-row.inline input {
-  flex: 1;
-}
-
-.modal-row:not(:last-child) {
+  justify-content: space-between;
+  align-items: center;
+  height: 56px;
   border-bottom: 1px solid var(--border-color);
 }
 
-input {
-  width: 100%;
-  font-size: 15px;
-  padding: 0;
+.edit-row:last-of-type {
+  border-bottom: none;
+}
+
+.edit-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  width: 60px;
+}
+
+.edit-input {
+  flex: 1;
+  font-size: 14px;
+  text-align: right;
   background: transparent;
   border: none;
   color: var(--text-primary);
   outline: none;
+  padding: 0;
+  margin-left: 16px;
 }
 
-input::placeholder {
+.edit-input::placeholder {
   color: var(--text-tertiary);
 }
 
-.input-title {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.input-link {
-  color: var(--text-secondary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-input.invalid {
+.edit-input.invalid {
   color: #ef4444;
 }
 
-.modal-actions {
+.edit-actions {
   display: flex;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 16px 0;
 }
 
 .action-btn {
   flex: 1;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  height: 40px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .action-btn.delete {
-  color: var(--text-tertiary);
+  color: #ef4444;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.action-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+}
+
+.action-btn.cancel {
+  color: var(--text-secondary);
   background: transparent;
   border: 1px solid var(--border-color);
 }
 
-.action-btn.delete:hover {
-  color: #ef4444;
-  border-color: #ef4444;
-  background: rgba(239, 68, 68, 0.05);
+.action-btn.cancel:hover {
+  border-color: var(--text-secondary);
 }
 
 .action-btn.save {
@@ -235,35 +211,25 @@ input.invalid {
 }
 
 .confirm-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 100;
 }
 
 .confirm-card {
   background: var(--bg-primary);
   border-radius: 16px;
   padding: 24px;
-  width: 200px;
+  width: 280px;
   text-align: center;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-.confirm-icon {
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(239, 68, 68, 0.1);
-  border-radius: 50%;
-  color: #ef4444;
 }
 
 .confirm-text {
@@ -275,32 +241,27 @@ input.invalid {
 
 .confirm-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
 }
 
 .confirm-btn {
   flex: 1;
+  font-size: 13px;
+  font-weight: 500;
   height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .confirm-btn.cancel {
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   background: rgba(0, 0, 0, 0.05);
   border: none;
 }
 
 .dark .confirm-btn.cancel {
   background: rgba(255, 255, 255, 0.1);
-}
-
-.confirm-btn.cancel:hover {
-  background: rgba(0, 0, 0, 0.1);
 }
 
 .confirm-btn.confirm {
@@ -313,17 +274,6 @@ input.invalid {
   background: #dc2626;
 }
 
-.modal-enter-active,
-.modal-leave-active {
-  transition: all 0.25s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-  transform: scale(0.95);
-}
-
 .confirm-enter-active,
 .confirm-leave-active {
   transition: all 0.2s ease;
@@ -332,6 +282,5 @@ input.invalid {
 .confirm-enter-from,
 .confirm-leave-to {
   opacity: 0;
-  transform: scale(0.9);
 }
 </style>
