@@ -93,8 +93,6 @@ const pageLabels = computed(() => lang.value === 'zh' ? pageLabelsZh : pageLabel
 const pages: Page[] = ['notes', 'stats', 'read']
 
 onMounted(async () => {
-  console.log('App onMounted, store.myCode:', store.myCode, 'store.viewingCode:', store.viewingCode)
-  
   await store.init()
   
   if (store.questions.length === 0) {
@@ -157,7 +155,6 @@ function formatTime(date: Date): string {
 }
 
 function saveEntry(content: string, source: string) {
-  console.log('saveEntry called:', content, source)
   store.addEntry(content, source)
 }
 
@@ -264,11 +261,9 @@ function toggleEtfExpand(etfName: string) {
 }
 
 async function handleSubmit() {
-  console.log('handleSubmit called, inputValue:', inputValue.value)
   if (!inputValue.value.trim() || isLoading.value) return
   
   const parsed = parseInput(inputValue.value)
-  console.log('parsed:', parsed)
   
   if (parsed.type === 'ai-toggle' || parsed.type === 'help' || parsed.type === 'etfsetup-toggle' || parsed.type === 'etf-toggle' || parsed.type === 'link-toggle') {
     inputValue.value = ''
@@ -337,7 +332,6 @@ async function handleSubmit() {
     }
     
     if (content) {
-      console.log('Processing content:', content, 'author:', author, 'aiMode:', aiMode.value)
       if (aiMode.value) {
         await processWithAI(content, author || 'Self')
       } else {

@@ -14,11 +14,9 @@ function generateCode(): string {
 
 function getMyCode(): string {
   let code = localStorage.getItem('moran-my-code')
-  console.log('getMyCode from localStorage:', code)
   if (!code) {
     code = generateCode()
     localStorage.setItem('moran-my-code', code)
-    console.log('Generated new code:', code)
   }
   return code
 }
@@ -26,7 +24,6 @@ function getMyCode(): string {
 function getViewingCode(): string {
   const viewingCode = localStorage.getItem('moran-viewing-code')
   const myCode = getMyCode()
-  console.log('getViewingCode:', { viewingCode, myCode })
   if (!viewingCode || viewingCode === myCode) {
     localStorage.removeItem('moran-viewing-code')
     return myCode
@@ -59,13 +56,10 @@ async function loadFromSupabase(code: string) {
     return { entries: [], questions: [], progress: [], etfs: [] }
   }
   
-  console.log('Loaded from Supabase for code:', code, data)
-  
   const result: StorageData = { entries: [], questions: [], progress: [], etfs: [] }
   
   if (data) {
     for (const item of data) {
-      console.log('Processing item:', item.data_type, item.data)
       if (item.data_type === 'entries') {
         result.entries = item.data?.entries?.map((e: any) => ({ ...e, createdAt: new Date(e.createdAt) })) || []
       } else if (item.data_type === 'questions') {
@@ -78,14 +72,11 @@ async function loadFromSupabase(code: string) {
     }
   }
   
-  console.log('Result:', result)
   return result
 }
 
 async function saveToSupabase(code: string, dataType: string, data: any) {
   if (!code) return
-  
-  console.log('Saving to Supabase:', { code, dataType, data })
   
   const { error } = await supabase
     .from('user_data')
@@ -100,8 +91,6 @@ async function saveToSupabase(code: string, dataType: string, data: any) {
   
   if (error) {
     console.error('Failed to save to Supabase:', error)
-  } else {
-    console.log('Saved successfully:', dataType)
   }
 }
 
@@ -115,7 +104,6 @@ interface StorageData {
 export const useStore = defineStore('moran', () => {
   const myCode = ref(getMyCode())
   const viewingCode = ref(getViewingCode())
-  console.log('Store initialized, myCode:', myCode.value, 'viewingCode:', viewingCode.value)
   const entries = ref<Entry[]>([])
   const questions = ref<DailyQuestion[]>([])
   const progress = ref<DayProgress[]>([])
@@ -149,11 +137,9 @@ export const useStore = defineStore('moran', () => {
 
   async function init() {
     isLoading.value = true
-    console.log('Init with viewingCode:', viewingCode.value, 'myCode:', myCode.value)
     const code = viewingCode.value
     if (code) {
       const data = await loadFromSupabase(code)
-      console.log('Loaded data:', data)
       entries.value = data.entries
       questions.value = data.questions
       progress.value = data.progress
@@ -175,18 +161,13 @@ export const useStore = defineStore('moran', () => {
   }
 
   async function addEntry(content: string, source: string) {
-    console.log('addEntry called, isReadOnly:', isReadOnly.value)
-    if (isReadOnly.value) {
-      console.log('addEntry blocked by isReadOnly')
-      return
-    }
+    if (isReadOnly.value) return
     const entry: Entry = {
       id: crypto.randomUUID(),
       content,
       source,
       createdAt: new Date()
     }
-    console.log('Adding entry:', entry)
     entries.value.push(entry)
     await save()
   }
@@ -243,18 +224,9 @@ export const useStore = defineStore('moran', () => {
   }
 
   async function save() {
-    console.log('save() called, isReadOnly:', isReadOnly.value, 'myCode:', myCode.value)
-    if (isReadOnly.value) {
-      console.log('save() blocked by isReadOnly')
-      return
-    }
+    if (isReadOnly.value) return
     const code = myCode.value
-    if (!code) {
-      console.log('save() blocked by no code')
-      return
-    }
-    
-    console.log('Saving entries:', entries.value)
+    if (!code) return
     
     await Promise.all([
       saveToSupabase(code, 'entries', { entries: entries.value }),
