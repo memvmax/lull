@@ -240,7 +240,7 @@ const currentPanel = computed(() => {
 
 .back-btn {
   position: fixed;
-  top: 20px;
+  top: 30.5px;
   right: 20px;
   display: flex;
   align-items: center;

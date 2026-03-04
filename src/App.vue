@@ -967,7 +967,6 @@ function handleTagsSubmit(tags: string[]) {
 
 .settings-btn {
   position: absolute;
-  top: 20px;
   right: 20px;
   display: flex;
   align-items: center;
