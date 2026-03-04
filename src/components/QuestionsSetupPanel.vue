@@ -40,66 +40,89 @@ function handleSave() {
 </script>
 
 <template>
-  <div class="questions-panel">
-    <div class="panel-header">
-      <span class="panel-label">{{ lang === 'zh' ? '每日问题' : 'Daily Questions' }}</span>
-      <button class="close-btn" @click="emit('close')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 6L6 18M6 6l12 12"/>
-        </svg>
-      </button>
-    </div>
-    
-    <div class="questions-list">
-      <div v-for="(q, i) in localQuestions" :key="i" class="question-row">
-        <span class="question-label">{{ lang === 'zh' ? '问题' : 'Question' }} {{ i + 1 }}</span>
-        <input 
-          :value="q" 
-          @input="updateQuestion(i, ($event.target as HTMLInputElement).value)"
-          class="question-input"
-          :placeholder="lang === 'zh' ? '输入问题' : 'Enter question'"
-        />
-        <button class="remove-btn" @click="removeQuestion(i)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
+  <Teleport to="body">
+    <div class="questions-backdrop" @click.self="emit('close')">
+      <div class="questions-modal">
+        <div class="modal-header">
+          <span class="modal-label">{{ lang === 'zh' ? '每日问题' : 'Daily Questions' }}</span>
+          <button class="close-btn" @click="emit('close')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="questions-list">
+          <div v-for="(q, i) in localQuestions" :key="i" class="question-row">
+            <span class="question-label">{{ lang === 'zh' ? '问题' : 'Question' }} {{ i + 1 }}</span>
+            <input 
+              :value="q" 
+              @input="updateQuestion(i, ($event.target as HTMLInputElement).value)"
+              class="question-input"
+              :placeholder="lang === 'zh' ? '输入问题' : 'Enter question'"
+            />
+            <button class="remove-btn" @click="removeQuestion(i)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="add-row">
+          <span class="question-label">{{ lang === 'zh' ? '新问题' : 'New' }}</span>
+          <input 
+            v-model="newQuestion"
+            class="question-input"
+            :placeholder="lang === 'zh' ? '输入问题后回车' : 'Enter question'"
+            @keyup.enter="addQuestion"
+          />
+        </div>
+        
+        <div class="modal-footer">
+          <span></span>
+          <button class="save-btn" @click="handleSave">{{ lang === 'zh' ? '保存' : 'Save' }}</button>
+        </div>
       </div>
     </div>
-    
-    <div class="add-row">
-      <span class="question-label">{{ lang === 'zh' ? '新问题' : 'New' }}</span>
-      <input 
-        v-model="newQuestion"
-        class="question-input"
-        :placeholder="lang === 'zh' ? '输入问题后回车' : 'Enter question'"
-        @keyup.enter="addQuestion"
-      />
-    </div>
-    
-    <div class="panel-footer">
-      <span></span>
-      <button class="save-btn" @click="handleSave">{{ lang === 'zh' ? '保存' : 'Save' }}</button>
-    </div>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped>
-.questions-panel {
-  background: var(--bg-primary);
-  padding: 0 16px;
-  margin-bottom: 24px;
+.questions-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
 }
 
-.panel-header {
+.questions-modal {
+  background: var(--bg-primary);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   height: 56px;
+  padding: 0 16px;
   border-bottom: 1px solid var(--border-color);
 }
 
-.panel-label {
+.modal-label {
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 1.5px;
@@ -133,6 +156,7 @@ function handleSave() {
 .questions-list {
   display: flex;
   flex-direction: column;
+  padding: 0 16px;
 }
 
 .question-row {
@@ -195,14 +219,16 @@ function handleSave() {
   display: flex;
   align-items: center;
   height: 56px;
+  padding: 0 16px;
   border-bottom: 1px solid var(--border-color);
 }
 
-.panel-footer {
+.modal-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   height: 56px;
+  padding: 0 16px;
 }
 
 .save-btn {
