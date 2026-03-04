@@ -3,6 +3,8 @@ export interface Entry {
   content: string
   source: string
   createdAt: Date
+  type?: 'note' | 'link'
+  link?: string
 }
 
 export interface DailyQuestion {

@@ -61,7 +61,12 @@ async function loadFromSupabase(code: string) {
   if (data) {
     for (const item of data) {
       if (item.data_type === 'entries') {
-        result.entries = item.data?.entries?.map((e: any) => ({ ...e, createdAt: new Date(e.createdAt) })) || []
+        result.entries = item.data?.entries?.map((e: any) => ({ 
+          ...e, 
+          createdAt: new Date(e.createdAt),
+          type: e.type || 'note',
+          link: e.link
+        })) || []
       } else if (item.data_type === 'questions') {
         result.questions = item.data?.questions || []
       } else if (item.data_type === 'progress') {
@@ -166,7 +171,8 @@ export const useStore = defineStore('moran', () => {
       id: crypto.randomUUID(),
       content,
       source,
-      createdAt: new Date()
+      createdAt: new Date(),
+      type: 'note'
     }
     entries.value.push(entry)
     await save()

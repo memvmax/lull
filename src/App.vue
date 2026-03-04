@@ -521,17 +521,12 @@ function handleAuthorSubmit(author: string) {
     id: crypto.randomUUID(),
     content: currentTitle.value,
     source: author,
-    createdAt: new Date().toISOString(),
-    type: 'link',
+    createdAt: new Date(),
+    type: 'link' as const,
     link: currentLink.value
   }
   
-  store.entries.push({
-    id: entry.id,
-    content: entry.content,
-    source: entry.source,
-    createdAt: new Date(entry.createdAt)
-  })
+  store.entries.push(entry)
   store.save()
   
   showLinkSetup.value = false
