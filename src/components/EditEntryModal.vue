@@ -85,17 +85,22 @@ function handleCancelDelete() {
       <button class="btn-save" @click="handleSave" :disabled="!isTimeValid">{{ lang === 'zh' ? '保存' : 'Save' }}</button>
     </div>
     
-    <Transition name="confirm">
-      <div v-if="showConfirm" class="confirm-overlay" @click.self="handleCancelDelete">
-        <div class="confirm-card">
-          <p class="confirm-text">{{ lang === 'zh' ? '确定删除？' : 'Delete?' }}</p>
-          <div class="confirm-actions">
-            <button class="confirm-btn cancel" @click="handleCancelDelete">{{ lang === 'zh' ? '取消' : 'No' }}</button>
-            <button class="confirm-btn confirm" @click="handleConfirmDelete">{{ lang === 'zh' ? '删除' : 'Yes' }}</button>
+    <Teleport to="body">
+      <Transition name="confirm">
+        <div v-if="showConfirm" class="confirm-backdrop" @click.self="handleCancelDelete">
+          <div class="confirm-modal">
+            <div class="confirm-content">
+              <span class="confirm-label">{{ lang === 'zh' ? '确认删除' : 'Confirm Delete' }}</span>
+              <p class="confirm-text">{{ lang === 'zh' ? '此操作无法撤销' : 'This action cannot be undone' }}</p>
+            </div>
+            <div class="confirm-footer">
+              <button class="confirm-btn cancel" @click="handleCancelDelete">{{ lang === 'zh' ? '取消' : 'Cancel' }}</button>
+              <button class="confirm-btn confirm" @click="handleConfirmDelete">{{ lang === 'zh' ? '删除' : 'Delete' }}</button>
+            </div>
           </div>
         </div>
-      </div>
-    </Transition>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -190,77 +195,102 @@ function handleCancelDelete() {
   cursor: not-allowed;
 }
 
-.confirm-overlay {
+.confirm-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 1000;
+  padding: 20px;
 }
 
-.confirm-card {
+.confirm-modal {
   background: var(--bg-primary);
   border-radius: 16px;
-  padding: 24px;
-  width: 280px;
-  text-align: center;
+  width: 100%;
+  max-width: 320px;
+  overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.confirm-content {
+  padding: 24px;
+  text-align: center;
+}
+
+.confirm-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
 }
 
 .confirm-text {
   font-size: 15px;
-  font-weight: 500;
   color: var(--text-primary);
-  margin: 0 0 20px;
+  margin: 0;
 }
 
-.confirm-actions {
+.confirm-footer {
   display: flex;
-  gap: 12px;
+  border-top: 1px solid var(--border-color);
 }
 
 .confirm-btn {
   flex: 1;
-  font-size: 13px;
+  height: 56px;
+  font-size: 11px;
   font-weight: 500;
-  height: 40px;
-  border-radius: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: transparent;
+  border: none;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .confirm-btn.cancel {
   color: var(--text-secondary);
-  background: rgba(0, 0, 0, 0.05);
-  border: none;
+  border-right: 1px solid var(--border-color);
 }
 
-.dark .confirm-btn.cancel {
-  background: rgba(255, 255, 255, 0.1);
+.confirm-btn.cancel:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.dark .confirm-btn.cancel:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .confirm-btn.confirm {
-  color: #fff;
-  background: #ef4444;
-  border: none;
+  color: #ef4444;
 }
 
 .confirm-btn.confirm:hover {
-  background: #dc2626;
+  background: rgba(239, 68, 68, 0.05);
 }
 
 .confirm-enter-active,
 .confirm-leave-active {
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 
 .confirm-enter-from,
 .confirm-leave-to {
   opacity: 0;
+}
+
+.confirm-enter-from .confirm-modal,
+.confirm-leave-to .confirm-modal {
+  transform: scale(0.95);
 }
 </style>
