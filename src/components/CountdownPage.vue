@@ -119,6 +119,6 @@ function pad(num: number): string {
   letter-spacing: 3px;
   text-transform: uppercase;
   color: rgba(232, 230, 225, 0.4);
-  margin-top: 16px;
+  margin-top: 8px;
 }
 </style>
