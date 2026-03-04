@@ -38,6 +38,7 @@ interface DisplayEntry {
   time: string
   type?: 'note' | 'link'
   link?: string
+  category?: string
 }
 
 const store = useStore()
@@ -444,11 +445,15 @@ function handleDeleteEntry(id: string) {
   closeEditModal()
 }
 
-function handleSaveEntry(id: string, data: { source: string; time: string }) {
+function handleSaveEntry(id: string, data: { source: string; time: string; content: string; link: string; category: string }) {
   if (store.isReadOnly) return
   const entry = store.entries.find(e => e.id === id)
   if (entry) {
+    entry.content = data.content
     entry.source = data.source
+    entry.link = data.link
+    entry.category = data.category
+    store.save()
   }
   closeEditModal()
 }

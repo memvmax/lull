@@ -5,6 +5,7 @@ export interface Entry {
   createdAt: Date
   type?: 'note' | 'link'
   link?: string
+  category?: string
 }
 
 export interface DailyQuestion {

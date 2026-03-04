@@ -65,7 +65,8 @@ async function loadFromSupabase(code: string) {
           ...e, 
           createdAt: new Date(e.createdAt),
           type: e.type || 'note',
-          link: e.link
+          link: e.link,
+          category: e.category
         })) || []
       } else if (item.data_type === 'questions') {
         result.questions = item.data?.questions || []
