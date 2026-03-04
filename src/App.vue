@@ -145,7 +145,7 @@ const pageLabelsZh: Record<Page, string> = {
 
 const pageLabelsEn: Record<Page, string> = {
   notes: 'Notes',
-  read: 'Read'
+  read: 'Reads'
 }
 
 const pageLabels = computed(() => lang.value === 'zh' ? pageLabelsZh : pageLabelsEn)
