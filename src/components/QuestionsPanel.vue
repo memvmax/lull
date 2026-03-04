@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import type { DailyQuestion } from '@/types'
 
 const props = defineProps<{
@@ -13,6 +13,13 @@ const emit = defineEmits<{
 }>()
 
 const answers = ref<Record<string, boolean | null>>({})
+const isHolding = ref(false)
+const progress = ref(0)
+const isCompleting = ref(false)
+const buttonRect = ref<DOMRect | null>(null)
+
+let holdTimer: ReturnType<typeof setInterval> | null = null
+let progressTimer: ReturnType<typeof setInterval> | null = null
 
 const allAnswered = computed(() => {
   return props.questions.every(q => answers.value[q.id] !== undefined)
@@ -20,6 +27,42 @@ const allAnswered = computed(() => {
 
 function setAnswer(questionId: string, value: boolean) {
   answers.value[questionId] = value
+}
+
+function startHold(event: MouseEvent | TouchEvent) {
+  if (!allAnswered.value || isCompleting.value) return
+  
+  const target = event.target as HTMLElement
+  buttonRect.value = target.getBoundingClientRect()
+  
+  isHolding.value = true
+  progress.value = 0
+  
+  const duration = 1500
+  const interval = 16
+  const step = (interval / duration) * 100
+  
+  progressTimer = setInterval(() => {
+    progress.value = Math.min(progress.value + step, 100)
+  }, interval)
+  
+  holdTimer = setTimeout(() => {
+    if (progressTimer) clearInterval(progressTimer)
+    isHolding.value = false
+    isCompleting.value = true
+    progress.value = 100
+    
+    setTimeout(() => {
+      handleComplete()
+    }, 800)
+  }, duration)
+}
+
+function cancelHold() {
+  if (holdTimer) clearTimeout(holdTimer)
+  if (progressTimer) clearInterval(progressTimer)
+  isHolding.value = false
+  progress.value = 0
 }
 
 function handleComplete() {
@@ -31,10 +74,15 @@ function handleComplete() {
   }
   emit('complete', finalAnswers)
 }
+
+onUnmounted(() => {
+  if (holdTimer) clearTimeout(holdTimer)
+  if (progressTimer) clearInterval(progressTimer)
+})
 </script>
 
 <template>
-  <div class="questions-panel">
+  <div class="questions-panel" :class="{ 'completing': isCompleting }">
     <div class="panel-header">
       <span class="panel-label">{{ lang === 'zh' ? '今日反思' : 'Daily Reflection' }}</span>
     </div>
@@ -63,8 +111,37 @@ function handleComplete() {
     
     <div class="panel-footer">
       <button class="btn-cancel" @click="emit('close')">{{ lang === 'zh' ? '取消' : 'Cancel' }}</button>
-      <button class="btn-save" @click="handleComplete" :disabled="!allAnswered">{{ lang === 'zh' ? '完成' : 'Done' }}</button>
+      <div class="btn-save-wrapper">
+        <button 
+          class="btn-save" 
+          :class="{ 'holding': isHolding, 'completing': isCompleting }"
+          :disabled="!allAnswered || isCompleting"
+          @mousedown="startHold"
+          @mouseup="cancelHold"
+          @mouseleave="cancelHold"
+          @touchstart.prevent="startHold"
+          @touchend="cancelHold"
+          @touchcancel="cancelHold"
+        >
+          {{ lang === 'zh' ? '完成' : 'Done' }}
+        </button>
+      </div>
     </div>
+    
+    <Teleport to="body">
+      <div 
+        v-if="isHolding || isCompleting" 
+        class="void-overlay"
+        :class="{ 'completing': isCompleting }"
+        :style="{
+          '--start-size': '150vmax',
+          '--end-size': '0px',
+          '--center-x': buttonRect ? (buttonRect.left + buttonRect.width / 2) + 'px' : '50%',
+          '--center-y': buttonRect ? (buttonRect.top + buttonRect.height / 2) + 'px' : '100%',
+          '--progress': progress / 100
+        }"
+      ></div>
+    </Teleport>
   </div>
 </template>
 
@@ -72,6 +149,11 @@ function handleComplete() {
 .questions-panel {
   display: flex;
   flex-direction: column;
+  transition: opacity 0.5s ease;
+}
+
+.questions-panel.completing {
+  opacity: 0;
 }
 
 .panel-header {
@@ -164,7 +246,14 @@ function handleComplete() {
   padding: 0;
 }
 
+.btn-save-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
 .btn-save {
+  position: relative;
+  z-index: 2;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 1.5px;
@@ -174,6 +263,7 @@ function handleComplete() {
   border: none;
   cursor: pointer;
   padding: 0;
+  transition: all 0.3s ease;
 }
 
 .btn-save:disabled {
@@ -181,7 +271,53 @@ function handleComplete() {
   cursor: not-allowed;
 }
 
-.btn-save:hover:not(:disabled) {
-  opacity: 0.85;
+.btn-save.holding {
+  color: #fff;
+}
+
+.btn-save.completing {
+  opacity: 0;
+}
+
+.void-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at var(--center-x) var(--center-y),
+    transparent calc(var(--progress) * 50%),
+    #0A0A0A calc(var(--progress) * 50% + 1px)
+  );
+  animation: void-pulse 0.1s ease-out;
+}
+
+.void-overlay.completing {
+  animation: void-final 0.8s ease-out forwards;
+}
+
+@keyframes void-pulse {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; }
+}
+
+@keyframes void-final {
+  0% {
+    background: radial-gradient(
+      circle at var(--center-x) var(--center-y),
+      transparent 0%,
+      #0A0A0A 1%
+    );
+  }
+  100% {
+    background: radial-gradient(
+      circle at var(--center-x) var(--center-y),
+      transparent 0%,
+      #0A0A0A 0%
+    );
+  }
 }
 </style>
