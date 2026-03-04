@@ -685,10 +685,7 @@ function handleTagsSubmit(tags: string[]) {
       </div>
       
       <button class="settings-btn" @click="openSettings">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
-          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
-        </svg>
+        SETTINGS
       </button>
     </header>
 
@@ -859,13 +856,15 @@ function handleTagsSubmit(tags: string[]) {
   left: 0;
   right: 0;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding: 20px;
   z-index: 50;
 }
 
 .page-btn {
+  position: absolute;
+  left: 20px;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 1px;
@@ -967,11 +966,17 @@ function handleTagsSubmit(tags: string[]) {
 }
 
 .settings-btn {
+  position: absolute;
+  right: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   color: var(--text-tertiary);
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 4px 8px;
   transition: color 0.2s ease;
 }
 
