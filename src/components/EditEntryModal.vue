@@ -80,16 +80,9 @@ function handleCancelDelete() {
       <input v-model="category" type="text" class="edit-input" :placeholder="lang === 'zh' ? '可选' : 'Optional'" />
     </div>
     
-    <div class="edit-actions">
-      <button class="action-btn delete" @click="handleDelete">
-        {{ lang === 'zh' ? '删除' : 'Delete' }}
-      </button>
-      <button class="action-btn cancel" @click="emit('close')">
-        {{ lang === 'zh' ? '取消' : 'Cancel' }}
-      </button>
-      <button class="action-btn save" @click="handleSave" :disabled="!isTimeValid">
-        {{ lang === 'zh' ? '保存' : 'Save' }}
-      </button>
+    <div class="edit-footer">
+      <button class="btn-delete" @click="handleDelete">{{ lang === 'zh' ? '删除' : 'Delete' }}</button>
+      <button class="btn-save" @click="handleSave" :disabled="!isTimeValid">{{ lang === 'zh' ? '保存' : 'Save' }}</button>
     </div>
     
     <Transition name="confirm">
@@ -109,8 +102,6 @@ function handleCancelDelete() {
 <style scoped>
 .edit-panel {
   background: var(--bg-primary);
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
   padding: 0 16px;
 }
 
@@ -138,7 +129,10 @@ function handleCancelDelete() {
 
 .edit-input {
   flex: 1;
-  font-size: 14px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   text-align: right;
   background: transparent;
   border: none;
@@ -150,62 +144,48 @@ function handleCancelDelete() {
 
 .edit-input::placeholder {
   color: var(--text-tertiary);
+  font-size: 11px;
 }
 
 .edit-input.invalid {
   color: #ef4444;
 }
 
-.edit-actions {
+.edit-footer {
   display: flex;
-  gap: 8px;
-  padding: 16px 0;
+  justify-content: space-between;
+  align-items: center;
+  height: 56px;
 }
 
-.action-btn {
-  flex: 1;
+.btn-delete {
   font-size: 11px;
   font-weight: 500;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  height: 40px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.action-btn.delete {
   color: #ef4444;
   background: transparent;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.action-btn.delete:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: #ef4444;
-}
-
-.action-btn.cancel {
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid var(--border-color);
-}
-
-.action-btn.cancel:hover {
-  border-color: var(--text-secondary);
-}
-
-.action-btn.save {
-  color: #fff;
-  background: var(--text-primary);
   border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 60px;
+  text-align: left;
 }
 
-.action-btn.save:hover:not(:disabled) {
-  opacity: 0.85;
+.btn-save {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #3b82f6;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: right;
 }
 
-.action-btn.save:disabled {
+.btn-save:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
