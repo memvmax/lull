@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useStore } from '@/stores/moran'
-import QuestionModal from '@/components/QuestionModal.vue'
 import CountdownPage from '@/components/CountdownPage.vue'
 import SettingsModal from '@/components/SettingsModal.vue'
 import CommandInput from '@/components/CommandInput.vue'
@@ -43,7 +42,6 @@ interface DisplayEntry {
 }
 
 const store = useStore()
-const showQuestions = ref(false)
 const isDark = ref(false)
 const inputValue = ref('')
 const isLoading = ref(false)
@@ -449,20 +447,11 @@ async function processWithAI(content: string, author: string) {
   }
 }
 
-function handleCompleteReading() {
-  if (displayEntries.value.length > 0) {
-    showQuestions.value = true
-  }
-}
-
-function handleQuestionsComplete(answers: Record<string, boolean>) {
+function handleCompleteToday(answers: Record<string, boolean>) {
   store.completeDay(answers)
-  showQuestions.value = false
+  closeSettings()
 }
 
-function handleBackFromQuestions() {
-  showQuestions.value = false
-}
 
 function handleBackFromCountdown() {
   store.undoCompleteDay()
@@ -635,13 +624,6 @@ function handleTagsSubmit(tags: string[]) {
 <template>
   <div class="app-container">
     <CountdownPage v-if="store.isTodayCompleted" @back="handleBackFromCountdown" />
-    
-    <QuestionModal
-      v-else-if="showQuestions"
-      :questions="store.questions"
-      @complete="handleQuestionsComplete"
-      @close="handleBackFromQuestions"
-    />
       
     <SettingsModal
       v-if="showSettings"
@@ -652,6 +634,7 @@ function handleTagsSubmit(tags: string[]) {
       :is-read-only="store.isReadOnly"
       :questions="store.questions"
       :progress="Object.fromEntries(store.progress.map(p => [p.date, p.completed]))"
+      :is-today-completed="store.isTodayCompleted"
       @close="closeSettings"
       @toggle-theme="toggleTheme"
       @toggle-lang="toggleLang"
@@ -659,6 +642,7 @@ function handleTagsSubmit(tags: string[]) {
       @back-to-my-community="handleBackToMyCommunity"
       @save-questions="handleSaveQuestions"
       @select-date="handleCalendarSelectDate"
+      @complete-today="handleCompleteToday"
     />
     
     <div v-if="showLinkSetup" class="link-setup-overlay">
@@ -795,12 +779,6 @@ function handleTagsSubmit(tags: string[]) {
                 @save="handleSaveEntry"
               />
             </template>
-            
-            <div v-if="displayEntries.filter(e => e.type !== 'link').length > 0" class="complete-section">
-              <button class="complete-btn" @click="handleCompleteReading">
-                {{ lang === 'zh' ? '完成今日阅读' : 'Complete today' }}
-              </button>
-            </div>
           </div>
           
           <div v-else-if="currentPage === 'stats'" class="stats-page">

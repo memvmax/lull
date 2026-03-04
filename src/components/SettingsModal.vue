@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import QuestionsSetupPanel from './QuestionsSetupPanel.vue'
 import CalendarPanel from './CalendarPanel.vue'
+import QuestionsModal from './QuestionsModal.vue'
 import type { DailyQuestion } from '@/types'
 
 const props = defineProps<{
@@ -12,6 +13,7 @@ const props = defineProps<{
   isReadOnly: boolean
   questions: DailyQuestion[]
   progress: Record<string, boolean>
+  isTodayCompleted?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -22,12 +24,14 @@ const emit = defineEmits<{
   (e: 'backToMyCommunity'): void
   (e: 'saveQuestions', questions: string[]): void
   (e: 'selectDate', date: Date): void
+  (e: 'completeToday', answers: Record<string, boolean>): void
 }>()
 
 const visitCode = ref('')
 const showVisitInput = ref(false)
 const showQuestionsPanel = ref(false)
 const showCalendarPanel = ref(false)
+const showQuestionsModal = ref(false)
 
 function copyMyCode() {
   navigator.clipboard.writeText(props.myCode)
@@ -70,6 +74,19 @@ function closeCalendarPanel() {
 function handleSelectDate(date: Date) {
   emit('selectDate', date)
   closeCalendarPanel()
+}
+
+function openQuestionsModal() {
+  showQuestionsModal.value = true
+}
+
+function closeQuestionsModal() {
+  showQuestionsModal.value = false
+}
+
+function handleCompleteToday(answers: Record<string, boolean>) {
+  emit('completeToday', answers)
+  closeQuestionsModal()
 }
 
 const currentPanel = computed(() => {
@@ -159,6 +176,15 @@ const currentPanel = computed(() => {
                 {{ lang === 'zh' ? '访问' : 'Visit' }}
               </button>
             </div>
+            
+            <div v-if="!isReadOnly && questions.length > 0" class="settings-item complete-section">
+              <span class="item-label"></span>
+              <button class="complete-btn" :class="{ completed: isTodayCompleted }" @click="openQuestionsModal">
+                {{ isTodayCompleted 
+                  ? (lang === 'zh' ? '今日已完成' : 'Today Completed') 
+                  : (lang === 'zh' ? '完成今日阅读' : 'Complete Today') }}
+              </button>
+            </div>
           </div>
         </div>
         
@@ -181,6 +207,21 @@ const currentPanel = computed(() => {
         </div>
       </Transition>
     </div>
+    
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showQuestionsModal" class="questions-modal-overlay" @click.self="closeQuestionsModal">
+          <div class="questions-modal">
+            <QuestionsModal
+              :questions="questions"
+              :lang="lang"
+              @close="closeQuestionsModal"
+              @complete="handleCompleteToday"
+            />
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -282,7 +323,8 @@ const currentPanel = computed(() => {
 }
 
 .cheat-code-section,
-.viewing-section {
+.viewing-section,
+.complete-section {
   cursor: default;
 }
 
@@ -373,6 +415,29 @@ const currentPanel = computed(() => {
   background: #1976d2;
 }
 
+.complete-btn {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+  background: #10b981;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 8px 16px;
+  transition: all 0.2s ease;
+}
+
+.complete-btn:hover {
+  background: #059669;
+}
+
+.complete-btn.completed {
+  background: var(--text-tertiary);
+  cursor: default;
+}
+
 .code-input-section {
   display: flex;
   gap: 12px;
@@ -433,6 +498,29 @@ const currentPanel = computed(() => {
   cursor: not-allowed;
 }
 
+.questions-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.questions-modal {
+  background: var(--bg-primary);
+  width: 100%;
+  max-width: 400px;
+  padding: 0 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
 .slide-enter-active,
 .slide-leave-active {
   transition: all 0.3s ease;
@@ -446,5 +534,20 @@ const currentPanel = computed(() => {
 .slide-leave-to {
   transform: translateX(-100%);
   opacity: 0;
+}
+
+.modal-enter-active,
+.modal-leave-active {
+  transition: all 0.25s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .questions-modal,
+.modal-leave-to .questions-modal {
+  transform: scale(0.95);
 }
 </style>
