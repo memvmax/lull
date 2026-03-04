@@ -85,6 +85,7 @@ const displayEntries = computed(() => {
 const editingEntry = ref<DisplayEntry | null>(null)
 
 const currentDate = ref(new Date())
+const slideDirection = ref<'left' | 'right' | null>(null)
 
 const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 
@@ -98,7 +99,13 @@ function getAdjacentDate(offset: number) {
 }
 
 function selectDate(offset: number) {
-  currentDate.value = getAdjacentDate(offset)
+  slideDirection.value = offset > 0 ? 'left' : 'right'
+  setTimeout(() => {
+    currentDate.value = getAdjacentDate(offset)
+    setTimeout(() => {
+      slideDirection.value = null
+    }, 50)
+  }, 150)
 }
 
 let touchStartX = 0
@@ -663,7 +670,7 @@ function handleTagsSubmit(tags: string[]) {
         {{ pageLabels[currentPage] }}
       </button>
       
-      <div class="calendar-widget" @touchstart="handleTouchStart" @touchend="handleTouchEnd">
+      <div class="calendar-widget" :class="{ 'slide-left': slideDirection === 'left', 'slide-right': slideDirection === 'right' }" @touchstart="handleTouchStart" @touchend="handleTouchEnd">
         <button class="calendar-day prev" @click="selectDate(-1)">
           <span class="day-num">{{ getAdjacentDate(-1).getDate() }}</span>
         </button>
@@ -957,7 +964,17 @@ function handleTagsSubmit(tags: string[]) {
 .calendar-widget {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  user-select: none;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.calendar-widget.slide-left {
+  transform: translateX(-8px);
+}
+
+.calendar-widget.slide-right {
+  transform: translateX(8px);
 }
 
 .calendar-day {
@@ -968,48 +985,59 @@ function handleTagsSubmit(tags: string[]) {
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .calendar-day.prev,
 .calendar-day.next {
-  width: 36px;
-  height: 44px;
-  opacity: 0.3;
+  width: 32px;
+  height: 40px;
+  opacity: 0.25;
 }
 
 .calendar-day.prev:hover,
 .calendar-day.next:hover {
-  opacity: 0.6;
+  opacity: 0.5;
+  transform: scale(1.1);
+}
+
+.calendar-day.prev:active,
+.calendar-day.next:active {
+  transform: scale(0.95);
 }
 
 .calendar-day.current {
-  width: 48px;
-  height: 56px;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
+  width: 44px;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 10px;
   cursor: default;
+  position: relative;
 }
 
 .dark .calendar-day.current {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .day-month {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
-  letter-spacing: 1px;
-  color: var(--text-secondary);
+  letter-spacing: 1.5px;
+  color: var(--text-tertiary);
+  margin-bottom: 1px;
 }
 
 .day-num {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
   color: var(--text-primary);
+  line-height: 1;
 }
 
 .calendar-day.current .day-num {
-  font-size: 18px;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .settings-btn {
