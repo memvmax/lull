@@ -1092,7 +1092,7 @@ function handleTagsSubmit(tags: string[]) {
 .main-content {
   max-width: 600px;
   margin: 0 auto;
-  padding: 60px 20px 40px;
+  padding: 100px 20px 120px;
 }
 
 .help-panel {
