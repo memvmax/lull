@@ -84,6 +84,41 @@ const displayEntries = computed(() => {
 })
 const editingEntry = ref<DisplayEntry | null>(null)
 
+const currentDate = ref(new Date())
+
+const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+
+const currentMonth = computed(() => monthNames[currentDate.value.getMonth()])
+const currentDay = computed(() => currentDate.value.getDate())
+
+function getAdjacentDate(offset: number) {
+  const date = new Date(currentDate.value)
+  date.setDate(date.getDate() + offset)
+  return date
+}
+
+function selectDate(offset: number) {
+  currentDate.value = getAdjacentDate(offset)
+}
+
+let touchStartX = 0
+
+function handleTouchStart(e: TouchEvent) {
+  touchStartX = e.touches[0]?.clientX || 0
+}
+
+function handleTouchEnd(e: TouchEvent) {
+  const touchEndX = e.changedTouches[0]?.clientX || 0
+  const diff = touchStartX - touchEndX
+  if (Math.abs(diff) > 50) {
+    if (diff > 0) {
+      selectDate(1)
+    } else {
+      selectDate(-1)
+    }
+  }
+}
+
 const isGMMode = computed(() => {
   if (store.isReadOnly) return false
   return store.myCode === 'MM1024'
@@ -627,6 +662,20 @@ function handleTagsSubmit(tags: string[]) {
       <button class="page-btn" @click="cyclePage">
         {{ pageLabels[currentPage] }}
       </button>
+      
+      <div class="calendar-widget" @touchstart="handleTouchStart" @touchend="handleTouchEnd">
+        <button class="calendar-day prev" @click="selectDate(-1)">
+          <span class="day-num">{{ getAdjacentDate(-1).getDate() }}</span>
+        </button>
+        <div class="calendar-day current">
+          <span class="day-month">{{ currentMonth }}</span>
+          <span class="day-num">{{ currentDay }}</span>
+        </div>
+        <button class="calendar-day next" @click="selectDate(1)">
+          <span class="day-num">{{ getAdjacentDate(1).getDate() }}</span>
+        </button>
+      </div>
+      
       <button class="settings-btn" @click="openSettings">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
@@ -903,6 +952,64 @@ function handleTagsSubmit(tags: string[]) {
 
 .page-btn:hover {
   color: var(--text-secondary);
+}
+
+.calendar-widget {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.calendar-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.calendar-day.prev,
+.calendar-day.next {
+  width: 36px;
+  height: 44px;
+  opacity: 0.3;
+}
+
+.calendar-day.prev:hover,
+.calendar-day.next:hover {
+  opacity: 0.6;
+}
+
+.calendar-day.current {
+  width: 48px;
+  height: 56px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  cursor: default;
+}
+
+.dark .calendar-day.current {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.day-month {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+}
+
+.day-num {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.calendar-day.current .day-num {
+  font-size: 18px;
 }
 
 .settings-btn {
