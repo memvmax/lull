@@ -10,7 +10,7 @@ import EtfListPanel from '@/components/EtfListPanel.vue'
 import QuestionsSetupPanel from '@/components/QuestionsSetupPanel.vue'
 import LinkSetupPanel from '@/components/LinkSetupPanel.vue'
 
-type Page = 'notes' | 'stats' | 'read'
+type Page = 'notes' | 'read'
 
 interface StockData {
   symbol: string
@@ -140,19 +140,17 @@ const isGMMode = computed(() => {
 
 const pageLabelsZh: Record<Page, string> = {
   notes: '笔记',
-  stats: '统计',
   read: '阅读'
 }
 
 const pageLabelsEn: Record<Page, string> = {
   notes: 'Notes',
-  stats: 'Stats',
   read: 'Read'
 }
 
 const pageLabels = computed(() => lang.value === 'zh' ? pageLabelsZh : pageLabelsEn)
 
-const pages: Page[] = ['notes', 'stats', 'read']
+const pages: Page[] = ['notes', 'read']
 
 onMounted(async () => {
   await store.init()
@@ -781,80 +779,6 @@ function handleTagsSubmit(tags: string[]) {
             </template>
           </div>
           
-          <div v-else-if="currentPage === 'stats'" class="stats-page">
-            <div v-if="stockResult" class="stock-result">
-              <div class="stock-header">
-                <span class="stock-symbol">{{ stockResult.symbol }}</span>
-                <span class="stock-name">{{ stockResult.name }}</span>
-              </div>
-              <div class="stock-price">{{ stockResult.price.toFixed(2) }} {{ stockResult.currency }}</div>
-              <div class="stock-change" :class="{ positive: stockResult.yearChange >= 0, negative: stockResult.yearChange < 0 }">
-                {{ lang === 'zh' ? '今年' : 'YTD' }} {{ formatChange(stockResult.yearChange) }}
-              </div>
-            </div>
-
-            <div v-if="etfResults.length > 0" class="etf-results">
-              <div v-for="stock in etfResults" :key="stock.symbol" class="stock-item">
-                <span class="stock-item-symbol">{{ stock.symbol }}</span>
-                <span class="stock-item-price">{{ stock.price.toFixed(2) }}</span>
-                <span class="stock-item-change" :class="{ positive: stock.yearChange >= 0, negative: stock.yearChange < 0 }">
-                  {{ formatChange(stock.yearChange) }}
-                </span>
-              </div>
-            </div>
-
-            <div v-if="savedStocks.length > 0" class="saved-stocks">
-              <h3 class="saved-stocks-title">{{ lang === 'zh' ? '已保存股票' : 'SAVED STOCKS' }}</h3>
-              <div v-for="stock in savedStocks" :key="stock.symbol" class="stock-item">
-                <div class="stock-item-info">
-                  <span class="stock-item-symbol">{{ stock.symbol }}</span>
-                  <span class="stock-item-price">{{ stock.price.toFixed(2) }}</span>
-                  <span class="stock-item-change" :class="{ positive: stock.yearChange >= 0, negative: stock.yearChange < 0 }">
-                    {{ formatChange(stock.yearChange) }}
-                  </span>
-                </div>
-                <button class="stock-remove-btn" @click="removeStock(stock.symbol)">×</button>
-              </div>
-            </div>
-
-            <div v-if="savedEtfs.length > 0" class="saved-etfs">
-              <h3 class="saved-stocks-title">{{ lang === 'zh' ? '已保存组合' : 'SAVED PORTFOLIOS' }}</h3>
-              <div v-for="etf in savedEtfs" :key="etf.name" class="etf-item-wrapper">
-                <div class="etf-item" @click="toggleEtfExpand(etf.name)">
-                  <span class="etf-name">{{ etf.name }}</span>
-                  <div class="etf-item-right">
-                    <span class="etf-count">{{ etf.stocks.length }} {{ lang === 'zh' ? '只' : 'stocks' }}</span>
-                    <button class="etf-action-btn" @click.stop="handleEditEtf(etf.name)" title="编辑">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                      </svg>
-                    </button>
-                    <button class="etf-action-btn delete" @click.stop="handleDeleteEtf(etf.name)" title="删除">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-                      </svg>
-                    </button>
-                    <span class="expand-icon">{{ expandedEtf === etf.name ? '▼' : '▶' }}</span>
-                  </div>
-                </div>
-                <div v-if="expandedEtf === etf.name" class="etf-stocks-list">
-                  <div v-for="stock in etf.stocks" :key="stock.symbol" class="etf-stock-row">
-                    <div class="stock-cell stock-symbol">{{ stock.symbol }}</div>
-                    <div class="stock-cell stock-weight">{{ stock.weight.toFixed(1) }}%</div>
-                    <button class="stock-edit-btn" @click.stop="handleEditEtfStock(etf.name, stock.symbol)">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                      </svg>
-                    </button>
-                    <button class="remove-stock-btn" @click.stop="handleDeleteEtfStock(etf.name, stock.symbol)">×</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
           <div v-else-if="currentPage === 'read'" class="read-page">
             <div v-if="tagFilter" class="tag-filter-bar">
               <span class="tag-filter-label">{{ lang === 'zh' ? '筛选' : 'Filter' }}</span>
@@ -1379,7 +1303,7 @@ function handleTagsSubmit(tags: string[]) {
   border-color: var(--text-secondary);
 }
 
-.stats-page {
+.read-page {
   padding-top: 20px;
 }
 
@@ -1624,28 +1548,6 @@ function handleTagsSubmit(tags: string[]) {
 
 .stock-edit-btn:hover {
   color: var(--text-secondary);
-}
-
-.add-stock-btn {
-  display: block;
-  width: calc(100% - 24px);
-  margin: 8px 12px 0;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: #2196f3;
-  background: transparent;
-  border: 1px solid #2196f3;
-  border-radius: 6px;
-  padding: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.add-stock-btn:hover {
-  background: #2196f3;
-  color: #fff;
 }
 
 .input-container {
