@@ -289,35 +289,12 @@ onUnmounted(() => {
   pointer-events: none;
   background: radial-gradient(
     circle at var(--center-x) var(--center-y),
-    transparent calc(var(--progress) * 50%),
-    #0A0A0A calc(var(--progress) * 50% + 1px)
+    transparent calc((1 - var(--progress)) * 70%),
+    #0A0A0A calc((1 - var(--progress)) * 70% + 1px)
   );
-  animation: void-pulse 0.1s ease-out;
 }
 
 .void-overlay.completing {
-  animation: void-final 0.8s ease-out forwards;
-}
-
-@keyframes void-pulse {
-  0% { opacity: 0.8; }
-  100% { opacity: 1; }
-}
-
-@keyframes void-final {
-  0% {
-    background: radial-gradient(
-      circle at var(--center-x) var(--center-y),
-      transparent 0%,
-      #0A0A0A 1%
-    );
-  }
-  100% {
-    background: radial-gradient(
-      circle at var(--center-x) var(--center-y),
-      transparent 0%,
-      #0A0A0A 0%
-    );
-  }
+  background: #0A0A0A;
 }
 </style>
