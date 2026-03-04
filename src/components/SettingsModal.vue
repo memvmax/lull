@@ -58,95 +58,97 @@ function handleSaveQuestions(questions: string[]) {
 
 <template>
   <div class="settings-overlay">
-    <button class="back-btn" @click="emit('close')">
+    <button class="back-btn" @click="showQuestionsPanel ? closeQuestionsPanel() : emit('close')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M19 12H5M12 19l-7-7 7-7"/>
       </svg>
     </button>
     
-    <div class="settings-content" :class="{ blurred: showQuestionsPanel }">
-      <div class="settings-list">
-        <button class="settings-item" disabled>
-          <span class="item-label">{{ lang === 'zh' ? '日历' : 'Calendar' }}</span>
-          <span class="item-hint">{{ lang === 'zh' ? '即将推出' : 'Coming soon' }}</span>
-        </button>
-        
-        <button class="settings-item" @click="emit('toggleTheme')">
-          <span class="item-label">{{ lang === 'zh' ? '外观' : 'Theme' }}</span>
-          <span class="item-value">{{ isDark ? (lang === 'zh' ? '深色' : 'Dark') : (lang === 'zh' ? '浅色' : 'Light') }}</span>
-        </button>
-        
-        <button class="settings-item" @click="emit('toggleLang')">
-          <span class="item-label">{{ lang === 'zh' ? '语言' : 'Language' }}</span>
-          <span class="item-value">{{ lang === 'zh' ? '中文' : 'English' }}</span>
-        </button>
-        
-        <button class="settings-item" @click="openQuestionsPanel">
-          <span class="item-label">{{ lang === 'zh' ? '每日问题' : 'Daily Questions' }}</span>
-          <span class="item-value">{{ lang === 'zh' ? '设置' : 'Setup' }}</span>
-        </button>
-        
-        <div class="settings-item cheat-code-section">
-          <span class="item-label">{{ lang === 'zh' ? '我的代码' : 'My Code' }}</span>
-          <div class="cheat-code-display">
-            <code class="cheat-code">{{ myCode }}</code>
-            <button class="copy-btn" @click="copyMyCode" :title="lang === 'zh' ? '复制' : 'Copy'">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-              </svg>
+    <div class="settings-wrapper">
+      <Transition name="slide" mode="out-in">
+        <div v-if="!showQuestionsPanel" class="settings-content" key="settings">
+          <div class="settings-list">
+            <button class="settings-item" disabled>
+              <span class="item-label">{{ lang === 'zh' ? '日历' : 'Calendar' }}</span>
+              <span class="item-hint">{{ lang === 'zh' ? '即将推出' : 'Coming soon' }}</span>
             </button>
+            
+            <button class="settings-item" @click="emit('toggleTheme')">
+              <span class="item-label">{{ lang === 'zh' ? '外观' : 'Theme' }}</span>
+              <span class="item-value">{{ isDark ? (lang === 'zh' ? '深色' : 'Dark') : (lang === 'zh' ? '浅色' : 'Light') }}</span>
+            </button>
+            
+            <button class="settings-item" @click="emit('toggleLang')">
+              <span class="item-label">{{ lang === 'zh' ? '语言' : 'Language' }}</span>
+              <span class="item-value">{{ lang === 'zh' ? '中文' : 'English' }}</span>
+            </button>
+            
+            <button class="settings-item" @click="openQuestionsPanel">
+              <span class="item-label">{{ lang === 'zh' ? '每日问题' : 'Daily Questions' }}</span>
+              <span class="item-value">{{ lang === 'zh' ? '设置' : 'Setup' }}</span>
+            </button>
+            
+            <div class="settings-item cheat-code-section">
+              <span class="item-label">{{ lang === 'zh' ? '我的代码' : 'My Code' }}</span>
+              <div class="cheat-code-display">
+                <code class="cheat-code">{{ myCode }}</code>
+                <button class="copy-btn" @click="copyMyCode" :title="lang === 'zh' ? '复制' : 'Copy'">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div v-if="isReadOnly" class="settings-item viewing-section">
+              <span class="item-label">{{ lang === 'zh' ? '当前查看' : 'Viewing' }}</span>
+              <div class="viewing-display">
+                <code class="cheat-code viewing-code">{{ viewingCode }}</code>
+                <span class="readonly-badge">{{ lang === 'zh' ? '只读' : 'Read-only' }}</span>
+              </div>
+            </div>
+            
+            <div v-if="isReadOnly" class="settings-item">
+              <span class="item-label"></span>
+              <button class="back-to-my-btn" @click="handleBack">
+                {{ lang === 'zh' ? '返回我的社区' : 'Back to My Community' }}
+              </button>
+            </div>
+            
+            <div v-if="!isReadOnly" class="settings-item">
+              <span class="item-label">{{ lang === 'zh' ? '访问社区' : 'Visit Community' }}</span>
+              <button class="switch-btn" @click="showVisitInput = !showVisitInput">
+                {{ showVisitInput ? (lang === 'zh' ? '取消' : 'Cancel') : (lang === 'zh' ? '输入代码' : 'Enter Code') }}
+              </button>
+            </div>
+            
+            <div v-if="showVisitInput && !isReadOnly" class="code-input-section">
+              <input
+                v-model="visitCode"
+                type="text"
+                maxlength="6"
+                :placeholder="lang === 'zh' ? '输入6位代码' : 'Enter 6-digit code'"
+                class="code-input"
+                @keyup.enter="handleVisit"
+              />
+              <button class="confirm-btn" @click="handleVisit" :disabled="visitCode.length !== 6">
+                {{ lang === 'zh' ? '访问' : 'Visit' }}
+              </button>
+            </div>
           </div>
         </div>
         
-        <div v-if="isReadOnly" class="settings-item viewing-section">
-          <span class="item-label">{{ lang === 'zh' ? '当前查看' : 'Viewing' }}</span>
-          <div class="viewing-display">
-            <code class="cheat-code viewing-code">{{ viewingCode }}</code>
-            <span class="readonly-badge">{{ lang === 'zh' ? '只读' : 'Read-only' }}</span>
-          </div>
-        </div>
-        
-        <div v-if="isReadOnly" class="settings-item">
-          <span class="item-label"></span>
-          <button class="back-to-my-btn" @click="handleBack">
-            {{ lang === 'zh' ? '返回我的社区' : 'Back to My Community' }}
-          </button>
-        </div>
-        
-        <div v-if="!isReadOnly" class="settings-item">
-          <span class="item-label">{{ lang === 'zh' ? '访问社区' : 'Visit Community' }}</span>
-          <button class="switch-btn" @click="showVisitInput = !showVisitInput">
-            {{ showVisitInput ? (lang === 'zh' ? '取消' : 'Cancel') : (lang === 'zh' ? '输入代码' : 'Enter Code') }}
-          </button>
-        </div>
-        
-        <div v-if="showVisitInput && !isReadOnly" class="code-input-section">
-          <input
-            v-model="visitCode"
-            type="text"
-            maxlength="6"
-            :placeholder="lang === 'zh' ? '输入6位代码' : 'Enter 6-digit code'"
-            class="code-input"
-            @keyup.enter="handleVisit"
+        <div v-else class="settings-content" key="questions">
+          <QuestionsSetupPanel
+            :questions="questions"
+            :lang="lang"
+            @close="closeQuestionsPanel"
+            @save="handleSaveQuestions"
           />
-          <button class="confirm-btn" @click="handleVisit" :disabled="visitCode.length !== 6">
-            {{ lang === 'zh' ? '访问' : 'Visit' }}
-          </button>
         </div>
-      </div>
+      </Transition>
     </div>
-    
-    <Transition name="questions">
-      <div v-if="showQuestionsPanel" class="questions-overlay">
-        <QuestionsSetupPanel
-          :questions="questions"
-          :lang="lang"
-          @close="closeQuestionsPanel"
-          @save="handleSaveQuestions"
-        />
-      </div>
-    </Transition>
   </div>
 </template>
 
@@ -180,15 +182,14 @@ function handleSaveQuestions(questions: string[]) {
   color: var(--text-secondary);
 }
 
-.settings-content {
+.settings-wrapper {
   max-width: 480px;
   margin: 80px auto 0;
-  transition: filter 0.3s ease;
+  overflow: hidden;
 }
 
-.settings-content.blurred {
-  filter: blur(4px);
-  pointer-events: none;
+.settings-content {
+  width: 100%;
 }
 
 .settings-list {
@@ -400,21 +401,18 @@ function handleSaveQuestions(questions: string[]) {
   cursor: not-allowed;
 }
 
-.questions-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-}
-
-.questions-enter-active,
-.questions-leave-active {
+.slide-enter-active,
+.slide-leave-active {
   transition: all 0.3s ease;
 }
 
-.questions-enter-from,
-.questions-leave-to {
+.slide-enter-from {
+  transform: translateX(100%);
   opacity: 0;
-  transform: translateY(-20px);
+}
+
+.slide-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
 }
 </style>

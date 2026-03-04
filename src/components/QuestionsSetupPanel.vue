@@ -41,13 +41,8 @@ function handleSave() {
 
 <template>
   <div class="questions-panel">
-    <div class="panel-header">
-      <span class="panel-label">{{ lang === 'zh' ? '每日问题' : 'Daily Questions' }}</span>
-      <button class="close-btn" @click="emit('close')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 6L6 18M6 6l12 12"/>
-        </svg>
-      </button>
+    <div class="panel-title">
+      <span class="title-label">{{ lang === 'zh' ? '每日问题' : 'Daily Questions' }}</span>
     </div>
     
     <div class="questions-list">
@@ -78,19 +73,19 @@ function handleSave() {
     </div>
     
     <div class="panel-footer">
-      <span></span>
-      <button class="save-btn" @click="handleSave">{{ lang === 'zh' ? '保存' : 'Save' }}</button>
+      <button class="btn-cancel" @click="emit('close')">{{ lang === 'zh' ? '取消' : 'Cancel' }}</button>
+      <button class="btn-save" @click="handleSave">{{ lang === 'zh' ? '保存' : 'Save' }}</button>
     </div>
   </div>
 </template>
 
 <style scoped>
 .questions-panel {
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
 }
 
-.panel-header {
+.panel-title {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -98,35 +93,12 @@ function handleSave() {
   border-bottom: 1px solid var(--border-color);
 }
 
-.panel-label {
+.title-label {
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--text-secondary);
-}
-
-.close-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-tertiary);
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.close-btn:hover {
-  color: var(--text-primary);
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.dark .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
 }
 
 .questions-list {
@@ -204,7 +176,19 @@ function handleSave() {
   height: 56px;
 }
 
-.save-btn {
+.btn-cancel {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #ef4444;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.btn-save {
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 1.5px;
@@ -214,10 +198,9 @@ function handleSave() {
   border: none;
   cursor: pointer;
   padding: 0;
-  text-align: right;
 }
 
-.save-btn:hover {
+.btn-save:hover {
   opacity: 0.85;
 }
 </style>
