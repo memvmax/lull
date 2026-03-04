@@ -242,11 +242,15 @@ const currentPanel = computed(() => {
   position: fixed;
   top: 20px;
   right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 19px;
+  padding: 4px 8px;
   color: var(--text-tertiary);
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 4px;
   transition: color 0.2s ease;
   z-index: 10;
 }
