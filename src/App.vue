@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useStore } from '@/stores/moran'
 import CountdownPage from '@/components/CountdownPage.vue'
 import SettingsModal from '@/components/SettingsModal.vue'
@@ -79,28 +79,48 @@ const displayEntries = computed(() => {
       return tags.includes(tagFilter.value!.toLowerCase())
     })
   }
-  
-  const selectedDateStr = `${currentDate.value.getFullYear()}-${String(currentDate.value.getMonth() + 1).padStart(2, '0')}-${String(currentDate.value.getDate()).padStart(2, '0')}`
-  entries = entries.filter(e => {
-    const entryDate = e.createdAt
-    const entryDateStr = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}-${String(entryDate.getDate()).padStart(2, '0')}`
-    return entryDateStr === selectedDateStr
-  })
-  
   return entries
 })
+
+const groupedEntries = computed(() => {
+  const groups: { date: string; entries: DisplayEntry[] }[] = []
+  const dateMap = new Map<string, DisplayEntry[]>()
+  
+  for (const entry of displayEntries.value) {
+    const entryDate = entry.createdAt
+    const dateStr = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}-${String(entryDate.getDate()).padStart(2, '0')}`
+    
+    if (!dateMap.has(dateStr)) {
+      dateMap.set(dateStr, [])
+    }
+    dateMap.get(dateStr)!.push(entry)
+  }
+  
+  const sortedDates = Array.from(dateMap.keys()).sort((a, b) => b.localeCompare(a))
+  
+  for (const date of sortedDates) {
+    groups.push({
+      date,
+      entries: dateMap.get(date)!
+    })
+  }
+  
+  return groups
+})
+
 const editingEntry = ref<DisplayEntry | null>(null)
 
 const currentDate = ref(new Date())
+const visibleDate = ref(new Date())
 const slideDirection = ref<'left' | 'right' | null>(null)
 
 const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 
-const currentMonth = computed(() => monthNames[currentDate.value.getMonth()])
-const currentDay = computed(() => currentDate.value.getDate())
+const currentMonth = computed(() => monthNames[visibleDate.value.getMonth()])
+const currentDay = computed(() => visibleDate.value.getDate())
 
 function getAdjacentDate(offset: number) {
-  const date = new Date(currentDate.value)
+  const date = new Date(visibleDate.value)
   date.setDate(date.getDate() + offset)
   return date
 }
@@ -108,6 +128,7 @@ function getAdjacentDate(offset: number) {
 function selectDate(offset: number) {
   slideDirection.value = offset > 0 ? 'left' : 'right'
   setTimeout(() => {
+    visibleDate.value = getAdjacentDate(offset)
     currentDate.value = getAdjacentDate(offset)
     setTimeout(() => {
       slideDirection.value = null
@@ -198,7 +219,44 @@ onMounted(async () => {
       return etf
     }))
   }
+  
+  window.addEventListener('scroll', handleScroll)
 })
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+
+const entriesListRef = ref<HTMLElement | null>(null)
+
+function handleScroll() {
+  if (currentPage.value !== 'notes') return
+  
+  const headerHeight = 88
+  const dateGroups = document.querySelectorAll('.date-group')
+  
+  for (let i = 0; i < dateGroups.length; i++) {
+    const group = dateGroups[i] as HTMLElement
+    const rect = group.getBoundingClientRect()
+    
+    if (rect.top <= headerHeight + 100 && rect.bottom > headerHeight) {
+      const dateStr = group.getAttribute('data-date')
+      if (dateStr) {
+        const parts = dateStr.split('-')
+        if (parts.length === 3) {
+          const year = parseInt(parts[0] || '0')
+          const month = parseInt(parts[1] || '1')
+          const day = parseInt(parts[2] || '1')
+          const newDate = new Date(year, month - 1, day)
+          if (newDate.getTime() !== visibleDate.value.getTime()) {
+            visibleDate.value = newDate
+          }
+        }
+      }
+      break
+    }
+  }
+}
 
 function getStorageKey(base: string): string {
   const code = store.myCode
@@ -751,28 +809,32 @@ function handleTagsSubmit(tags: string[]) {
             @delete-stock="handleDeleteEtfStock"
           />
 
-          <div v-if="currentPage === 'notes'" class="entries-list">
-            <template v-for="entry in displayEntries.filter(e => e.type !== 'link')" :key="entry.id">
-              <article class="entry" :class="{ 'gm-mode': isGMMode, 'editing': editingEntry?.id === entry.id }">
-                <div class="meta">
-                  <span>{{ entry.time }} · {{ entry.source }}</span>
-                  <button v-if="isGMMode" class="edit-btn" @click="openEditModal(entry)" title="编辑">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                    </svg>
-                  </button>
-                </div>
-                <div class="text">{{ entry.content }}</div>
-              </article>
-              <EditEntryModal
-                v-if="editingEntry?.id === entry.id"
-                :entry="editingEntry"
-                :lang="lang"
-                @close="closeEditModal"
-                @delete="handleDeleteEntry"
-                @save="handleSaveEntry"
-              />
+          <div v-if="currentPage === 'notes'" class="entries-list" ref="entriesListRef">
+            <template v-for="group in groupedEntries" :key="group.date">
+              <div class="date-group" :data-date="group.date">
+                <template v-for="entry in group.entries.filter(e => e.type !== 'link')" :key="entry.id">
+                  <article class="entry" :class="{ 'gm-mode': isGMMode, 'editing': editingEntry?.id === entry.id }">
+                    <div class="meta">
+                      <span>{{ entry.time }} · {{ entry.source }}</span>
+                      <button v-if="isGMMode" class="edit-btn" @click="openEditModal(entry)" title="编辑">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="text">{{ entry.content }}</div>
+                  </article>
+                  <EditEntryModal
+                    v-if="editingEntry?.id === entry.id"
+                    :entry="editingEntry"
+                    :lang="lang"
+                    @close="closeEditModal"
+                    @delete="handleDeleteEntry"
+                    @save="handleSaveEntry"
+                  />
+                </template>
+              </div>
             </template>
           </div>
           
